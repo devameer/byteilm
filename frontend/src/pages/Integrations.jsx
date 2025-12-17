@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -30,16 +31,10 @@ const Integrations = () => {
   const fetchIntegrations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/integrations', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setConnectedIntegrations(data.data.connected);
-        setAvailableIntegrations(data.data.available);
+      const response = await axios.get('/integrations');
+      if (response.data.success) {
+        setConnectedIntegrations(response.data.data.connected);
+        setAvailableIntegrations(response.data.data.available);
       }
     } catch (error) {
       console.error('Error fetching integrations:', error);
@@ -50,17 +45,9 @@ const Integrations = () => {
 
   const handleConnect = async (provider) => {
     try {
-      // Get OAuth URL
-      const response = await fetch(`/api/integrations/auth/${provider}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        // Open OAuth window
-        window.location.href = data.data.auth_url;
+      const response = await axios.get(`/integrations/auth/${provider}`);
+      if (response.data.success) {
+        window.location.href = response.data.data.auth_url;
       }
     } catch (error) {
       console.error('Error connecting integration:', error);
@@ -74,15 +61,8 @@ const Integrations = () => {
     }
 
     try {
-      const response = await fetch(`/api/integrations/${integrationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
+      const response = await axios.delete(`/integrations/${integrationId}`);
+      if (response.data.success) {
         alert('تم فصل التكامل بنجاح');
         fetchIntegrations();
       }
@@ -96,18 +76,11 @@ const Integrations = () => {
     try {
       setTesting({ ...testing, [integrationId]: true });
 
-      const response = await fetch(`/api/integrations/${integrationId}/test`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
+      const response = await axios.post(`/integrations/${integrationId}/test`);
+      if (response.data.success) {
         alert('الاتصال يعمل بنجاح ✓');
       } else {
-        alert('فشل اختبار الاتصال: ' + data.message);
+        alert('فشل اختبار الاتصال: ' + response.data.message);
       }
     } catch (error) {
       console.error('Error testing connection:', error);
@@ -121,19 +94,12 @@ const Integrations = () => {
     try {
       setSyncing({ ...syncing, [integrationId]: true });
 
-      const response = await fetch(`/api/integrations/${integrationId}/sync`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
+      const response = await axios.post(`/integrations/${integrationId}/sync`);
+      if (response.data.success) {
         alert('تمت المزامنة بنجاح ✓');
         fetchIntegrations();
       } else {
-        alert('فشلت المزامنة: ' + data.message);
+        alert('فشلت المزامنة: ' + response.data.message);
       }
     } catch (error) {
       console.error('Error syncing:', error);
@@ -145,17 +111,8 @@ const Integrations = () => {
 
   const handleUpdateSettings = async (integrationId, settings) => {
     try {
-      const response = await fetch(`/api/integrations/${integrationId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(settings)
-      });
-
-      const data = await response.json();
-      if (data.success) {
+      const response = await axios.put(`/integrations/${integrationId}`, settings);
+      if (response.data.success) {
         alert('تم تحديث الإعدادات بنجاح');
         fetchIntegrations();
         setShowSettings(false);
@@ -168,15 +125,9 @@ const Integrations = () => {
 
   const fetchLogs = async (integrationId) => {
     try {
-      const response = await fetch(`/api/integrations/${integrationId}/logs`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setLogs(data.data.data);
+      const response = await axios.get(`/integrations/${integrationId}/logs`);
+      if (response.data.success) {
+        setLogs(response.data.data.data);
         setShowLogs(true);
       }
     } catch (error) {
@@ -184,17 +135,11 @@ const Integrations = () => {
     }
   };
 
-  const fetchStatistics = async (integrationId) => {
+  const fetchStatisticsData = async (integrationId) => {
     try {
-      const response = await fetch(`/api/integrations/${integrationId}/statistics`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setStatistics(data.data);
+      const response = await axios.get(`/integrations/${integrationId}/statistics`);
+      if (response.data.success) {
+        setStatistics(response.data.data);
         setShowStatistics(true);
       }
     } catch (error) {
@@ -328,7 +273,7 @@ const Integrations = () => {
                   <button
                     onClick={() => {
                       setSelectedIntegration(integration);
-                      fetchStatistics(integration.id);
+                      fetchStatisticsData(integration.id);
                     }}
                     className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm"
                   >

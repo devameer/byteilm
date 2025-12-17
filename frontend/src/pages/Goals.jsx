@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   TrophyIcon,
   PlusIcon,
@@ -36,11 +37,8 @@ export default function Goals() {
       if (filter.status !== 'all') params.append('status', filter.status);
       if (filter.category !== 'all') params.append('category', filter.category);
 
-      const response = await fetch(`/api/goals?${params}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await response.json();
-      setGoals(data.data);
+      const response = await axios.get(`/goals?${params}`);
+      setGoals(response.data.data);
     } catch (error) {
       console.error('Error fetching goals:', error);
     } finally {
@@ -50,11 +48,8 @@ export default function Goals() {
 
   const fetchStatistics = async () => {
     try {
-      const response = await fetch('/api/goals/statistics', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await response.json();
-      setStatistics(data.data);
+      const response = await axios.get('/goals/statistics');
+      setStatistics(response.data.data);
     } catch (error) {
       console.error('Error fetching statistics:', error);
     }
@@ -62,11 +57,8 @@ export default function Goals() {
 
   const fetchSuggestions = async () => {
     try {
-      const response = await fetch('/api/goals/suggestions', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await response.json();
-      setSuggestions(data.data);
+      const response = await axios.get('/goals/suggestions');
+      setSuggestions(response.data.data);
     } catch (error) {
       console.error('Error fetching suggestions:', error);
     }
@@ -74,11 +66,8 @@ export default function Goals() {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await fetch('/api/goals/leaderboard?limit=5', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await response.json();
-      setLeaderboard(data.data);
+      const response = await axios.get('/goals/leaderboard?limit=5');
+      setLeaderboard(response.data.data);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     }
@@ -86,16 +75,8 @@ export default function Goals() {
 
   const incrementGoalProgress = async (goalId, amount = 1) => {
     try {
-      const response = await fetch(`/api/goals/${goalId}/increment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ amount })
-      });
-
-      if (response.ok) {
+      const response = await axios.post(`/goals/${goalId}/increment`, { amount });
+      if (response.data.success) {
         fetchGoals();
         fetchStatistics();
       }
@@ -106,14 +87,8 @@ export default function Goals() {
 
   const markCompleted = async (goalId) => {
     try {
-      const response = await fetch(`/api/goals/${goalId}/complete`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
+      const response = await axios.post(`/goals/${goalId}/complete`);
+      if (response.data.success) {
         fetchGoals();
         fetchStatistics();
         // Show celebration modal/animation

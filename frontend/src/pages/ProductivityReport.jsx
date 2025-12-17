@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { CalendarIcon, ChartBarIcon, ClockIcon, TrophyIcon, FireIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { API_BASE_URL } from '../config';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
@@ -28,13 +30,8 @@ export default function ProductivityReport() {
 
   const fetchPresetPeriods = async () => {
     try {
-      const response = await fetch('/api/reports/types', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-      const data = await response.json();
-      setPresetPeriods(data.data.preset_periods);
+      const response = await axios.get('/reports/types');
+      setPresetPeriods(response.data.data.preset_periods);
     } catch (error) {
       console.error('Error fetching periods:', error);
     }
@@ -55,14 +52,8 @@ export default function ProductivityReport() {
         }
       }
 
-      const response = await fetch(`/api/reports/productivity${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-
-      const data = await response.json();
-      setReportData(data.data);
+      const response = await axios.get(`/reports/productivity${params}`);
+      setReportData(response.data.data);
     } catch (error) {
       console.error('Error fetching report:', error);
     } finally {
@@ -81,7 +72,7 @@ export default function ProductivityReport() {
       ? `?start_date=${customDates.start_date}&end_date=${customDates.end_date}`
       : `?start_date=${period.start_date}&end_date=${period.end_date}`;
 
-    window.open(`/api/reports/productivity/export/pdf${params}`, '_blank');
+    window.open(`${API_BASE_URL}/api/reports/productivity/export/pdf${params}`, '_blank');
   };
 
   const exportExcel = () => {
@@ -90,7 +81,7 @@ export default function ProductivityReport() {
       ? `?start_date=${customDates.start_date}&end_date=${customDates.end_date}`
       : `?start_date=${period.start_date}&end_date=${period.end_date}`;
 
-    window.open(`/api/reports/productivity/export/excel${params}`, '_blank');
+    window.open(`${API_BASE_URL}/api/reports/productivity/export/excel${params}`, '_blank');
   };
 
   // Chart data

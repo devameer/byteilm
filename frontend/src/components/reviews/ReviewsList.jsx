@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import ReviewCard from './ReviewCard';
 import WriteReview from './WriteReview';
 
@@ -29,22 +30,15 @@ const ReviewsList = ({ courseId }) => {
         params.append('rating', filterRating);
       }
 
-      const response = await fetch(`/api/courses/${courseId}/reviews?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
+      const response = await axios.get(`/courses/${courseId}/reviews?${params}`);
+      if (response.data.success) {
         if (page === 1) {
-          setReviews(data.data.data);
+          setReviews(response.data.data.data);
         } else {
-          setReviews(prev => [...prev, ...data.data.data]);
+          setReviews(prev => [...prev, ...response.data.data.data]);
         }
-        setSummary(data.summary);
-        setHasMore(data.data.current_page < data.data.last_page);
+        setSummary(response.data.summary);
+        setHasMore(response.data.data.current_page < response.data.data.last_page);
       }
     } catch (error) {
       console.error('Error fetching reviews:', error);
@@ -55,16 +49,9 @@ const ReviewsList = ({ courseId }) => {
 
   const fetchMyReview = async () => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/my-review`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setMyReview(data.data);
+      const response = await axios.get(`/courses/${courseId}/my-review`);
+      if (response.data.success) {
+        setMyReview(response.data.data);
       }
     } catch (error) {
       // User hasn't reviewed yet
@@ -89,21 +76,12 @@ const ReviewsList = ({ courseId }) => {
 
   const handleVote = async (reviewId, voteType) => {
     try {
-      const response = await fetch(`/api/reviews/${reviewId}/vote`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ vote: voteType })
-      });
-
-      const data = await response.json();
-      if (data.success) {
+      const response = await axios.post(`/reviews/${reviewId}/vote`, { vote: voteType });
+      if (response.data.success) {
         // Update the review in state
         setReviews(reviews.map(review =>
           review.id === reviewId
-            ? { ...review, helpful_count: data.data.helpful_count, not_helpful_count: data.data.not_helpful_count }
+            ? { ...review, helpful_count: response.data.data.helpful_count, not_helpful_count: response.data.data.not_helpful_count }
             : review
         ));
       }

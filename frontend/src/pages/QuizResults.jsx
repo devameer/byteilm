@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -23,13 +24,8 @@ const QuizResults = () => {
   const fetchResults = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/quiz-attempts/${attemptId}/results`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      const response = await axios.get(`/quiz-attempts/${attemptId}/results`);
+      const data = response.data;
       if (data.success) {
         setResults(data.data);
       } else {
@@ -38,7 +34,7 @@ const QuizResults = () => {
       }
     } catch (error) {
       console.error('Error fetching results:', error);
-      alert('فشل تحميل النتائج');
+      alert('فشل تحميل النتائج: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import AIChatbot from '../components/AIChatbot';
 
 const AIAssistantDashboard = () => {
@@ -13,16 +14,9 @@ const AIAssistantDashboard = () => {
 
   const fetchDashboard = async () => {
     try {
-      const response = await fetch('/api/ai/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setDashboard(data.data);
+      const response = await axios.get('/ai/dashboard');
+      if (response.data.success) {
+        setDashboard(response.data.data);
       }
     } catch (error) {
       console.error('Error fetching dashboard:', error);
@@ -33,13 +27,7 @@ const AIAssistantDashboard = () => {
 
   const handleAcceptRecommendation = async (id) => {
     try {
-      await fetch(`/api/ai/recommendations/${id}/accept`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      await axios.post(`/ai/recommendations/${id}/accept`);
       fetchDashboard();
     } catch (error) {
       console.error('Error accepting recommendation:', error);
@@ -48,13 +36,7 @@ const AIAssistantDashboard = () => {
 
   const handleDismissRecommendation = async (id) => {
     try {
-      await fetch(`/api/ai/recommendations/${id}/dismiss`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      await axios.post(`/ai/recommendations/${id}/dismiss`);
       fetchDashboard();
     } catch (error) {
       console.error('Error dismissing recommendation:', error);
@@ -63,13 +45,7 @@ const AIAssistantDashboard = () => {
 
   const handleMarkInsightAsRead = async (id) => {
     try {
-      await fetch(`/api/ai/insights/${id}/read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      await axios.post(`/ai/insights/${id}/read`);
       fetchDashboard();
     } catch (error) {
       console.error('Error marking insight as read:', error);
@@ -78,16 +54,8 @@ const AIAssistantDashboard = () => {
 
   const generateInsights = async () => {
     try {
-      const response = await fetch('/api/ai/insights/generate', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
+      const response = await axios.post('/ai/insights/generate');
+      if (response.data.success) {
         fetchDashboard();
         alert('تم إنشاء رؤى تعليمية جديدة!');
       }

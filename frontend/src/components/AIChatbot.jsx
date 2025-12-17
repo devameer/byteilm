@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 
 const AIChatbot = ({ contextType = null, contextId = null, onClose = null }) => {
   const [conversations, setConversations] = useState([]);
@@ -28,20 +29,13 @@ const AIChatbot = ({ contextType = null, contextId = null, onClose = null }) => 
 
   const fetchConversations = async () => {
     try {
-      const response = await fetch('/api/ai/chat/conversations', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setConversations(data.data);
+      const response = await axios.get('/ai/chat/conversations');
+      if (response.data.success) {
+        setConversations(response.data.data);
 
         // If there's a context, create or select relevant conversation
         if (contextType && contextId) {
-          const existingConv = data.data.find(
+          const existingConv = response.data.data.find(
             c => c.context_type === contextType && c.context_id === contextId
           );
 
@@ -50,8 +44,8 @@ const AIChatbot = ({ contextType = null, contextId = null, onClose = null }) => 
           } else {
             createNewConversation();
           }
-        } else if (data.data.length > 0) {
-          selectConversation(data.data[0].id);
+        } else if (response.data.data.length > 0) {
+          selectConversation(response.data.data[0].id);
         }
       }
     } catch (error) {
@@ -61,23 +55,15 @@ const AIChatbot = ({ contextType = null, contextId = null, onClose = null }) => 
 
   const createNewConversation = async () => {
     try {
-      const response = await fetch('/api/ai/chat/conversations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: 'محادثة جديدة',
-          context_type: contextType,
-          context_id: contextId
-        })
+      const response = await axios.post('/ai/chat/conversations', {
+        title: 'محادثة جديدة',
+        context_type: contextType,
+        context_id: contextId
       });
 
-      const data = await response.json();
-      if (data.success) {
-        setConversations([data.data, ...conversations]);
-        selectConversation(data.data.id);
+      if (response.data.success) {
+        setConversations([response.data.data, ...conversations]);
+        selectConversation(response.data.data.id);
       }
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -87,17 +73,10 @@ const AIChatbot = ({ contextType = null, contextId = null, onClose = null }) => 
   const selectConversation = async (id) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/ai/chat/conversations/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setCurrentConversation(data.data);
-        setMessages(data.data.messages || []);
+      const response = await axios.get(`/ai/chat/conversations/${id}`);
+      if (response.data.success) {
+        setCurrentConversation(response.data.data);
+        setMessages(response.data.data.messages || []);
       }
     } catch (error) {
       console.error('Error loading conversation:', error);
@@ -123,21 +102,15 @@ const AIChatbot = ({ contextType = null, contextId = null, onClose = null }) => 
     setMessages(prev => [...prev, optimisticUserMessage]);
 
     try {
-      const response = await fetch(`/api/ai/chat/conversations/${currentConversation.id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message: messageText })
+      const response = await axios.post(`/ai/chat/conversations/${currentConversation.id}/messages`, {
+        message: messageText
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (response.data.success) {
         // Replace optimistic message with real messages
         setMessages(prev => {
           const filtered = prev.filter(m => m.id !== optimisticUserMessage.id);
-          return [...filtered, data.data.user_message, data.data.assistant_message];
+          return [...filtered, response.data.data.user_message, response.data.data.assistant_message];
         });
       }
     } catch (error) {

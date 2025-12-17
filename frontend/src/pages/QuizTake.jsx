@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   ClockIcon,
   CheckCircleIcon,
@@ -51,14 +52,8 @@ const QuizTake = () => {
   const startQuiz = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/quizzes/${quizId}/start`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      const response = await axios.post(`/quizzes/${quizId}/start`);
+      const data = response.data;
       if (data.success) {
         setAttempt(data.data);
         setQuiz(data.data.quiz);
@@ -70,7 +65,7 @@ const QuizTake = () => {
       }
     } catch (error) {
       console.error('Error starting quiz:', error);
-      alert('فشل بدء الاختبار');
+      alert('فشل بدء الاختبار: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -88,17 +83,10 @@ const QuizTake = () => {
     const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000);
 
     try {
-      await fetch(`/api/quiz-attempts/${attempt.attempt_id}/answer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          question_id: questionId,
-          answer: answer,
-          time_spent: timeSpent
-        })
+      await axios.post(`/quiz-attempts/${attempt.attempt_id}/answer`, {
+        question_id: questionId,
+        answer: answer,
+        time_spent: timeSpent
       });
     } catch (error) {
       console.error('Error saving answer:', error);
@@ -142,20 +130,14 @@ const QuizTake = () => {
 
     try {
       setSubmitting(true);
-      const response = await fetch(`/api/quiz-attempts/${attempt.attempt_id}/submit`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      const response = await axios.post(`/quiz-attempts/${attempt.attempt_id}/submit`);
+      const data = response.data;
       if (data.success) {
         navigate(`/quiz-results/${attempt.attempt_id}`);
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
-      alert('فشل تسليم الاختبار');
+      alert('فشل تسليم الاختبار: ' + (error.response?.data?.message || error.message));
     } finally {
       setSubmitting(false);
     }

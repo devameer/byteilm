@@ -31,6 +31,14 @@ const SharedResourcesPage = lazy(() => import("../pages/SharedResources"));
 const KanbanBoardPage = lazy(() => import("../pages/KanbanBoard"));
 const JoinTeamPage = lazy(() => import("../pages/JoinTeam"));
 
+// New Pages
+const GoalsPage = lazy(() => import("../pages/Goals"));
+const IntegrationsPage = lazy(() => import("../pages/Integrations"));
+const ProductivityReportPage = lazy(() => import("../pages/ProductivityReport"));
+const AIAssistantPage = lazy(() => import("../pages/AIAssistantDashboard"));
+const QuizTakePage = lazy(() => import("../pages/QuizTake"));
+const QuizResultsPage = lazy(() => import("../pages/QuizResults"));
+
 export const publicRoutes = [
   { path: "/", element: <LandingPage /> },
   { path: "/features", element: <FeaturesPage /> },
@@ -62,4 +70,11 @@ export const privateRoutes = [
   { path: "/notifications", element: <NotificationsPage /> },
   { path: "/shared-resources/:teamId", element: <SharedResourcesPage /> },
   { path: "/kanban", element: <KanbanBoardPage /> },
+  // New Pages
+  { path: "/goals", element: <GoalsPage /> },
+  { path: "/integrations", element: <IntegrationsPage /> },
+  { path: "/productivity-report", element: <ProductivityReportPage /> },
+  { path: "/ai-assistant", element: <AIAssistantPage /> },
+  { path: "/quizzes/:quizId", element: <QuizTakePage /> },
+  { path: "/quiz-results/:attemptId", element: <QuizResultsPage /> },
 ];
