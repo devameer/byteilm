@@ -423,13 +423,15 @@ class LessonVideoApiController extends Controller
             // Extract audio from temp file BEFORE uploading (parallel processing)
             $audioPath = null;
             try {
-                if ($this->videoService->isFFmpegAvailable()) {
+                $ffmpegPath = $this->videoService->getFFmpegPath();
+                if ($ffmpegPath) {
                     // Extract audio directly from the temp merged file
                     $tempAudioPath = storage_path('app/temp/' . pathinfo($fileName, PATHINFO_FILENAME) . '.mp3');
 
                     // Run FFmpeg on the local temp file
                     $command = sprintf(
-                        'ffmpeg -i %s -vn -acodec libmp3lame -ab 128k -ar 44100 -y %s 2>&1',
+                        '%s -i %s -vn -acodec libmp3lame -ab 128k -ar 44100 -y %s 2>&1',
+                        escapeshellarg($ffmpegPath),
                         escapeshellarg($tempMergedPath),
                         escapeshellarg($tempAudioPath)
                     );

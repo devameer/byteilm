@@ -382,7 +382,45 @@ class VideoProcessingService
      */
     public function isFFmpegAvailable(): bool
     {
-        exec('ffmpeg -version 2>&1', $output, $returnCode);
+        return $this->getFFmpegPath() !== null;
+    }
+
+    /**
+     * Get the FFmpeg binary path.
+     */
+    public function getFFmpegPath(): ?string
+    {
+        // Check if path is configured in .env
+        $configuredPath = env('FFMPEG_PATH');
+        if ($configuredPath && $this->checkFFmpegAtPath($configuredPath)) {
+            return $configuredPath;
+        }
+
+        // Try common paths
+        $paths = [
+            'ffmpeg',
+            '/usr/bin/ffmpeg',
+            '/usr/local/bin/ffmpeg',
+            '/opt/cpanel/composer/bin/ffmpeg',
+            getenv('HOME') . '/bin/ffmpeg', // ~/bin/ffmpeg for cPanel
+            '/home/' . get_current_user() . '/bin/ffmpeg',
+        ];
+
+        foreach ($paths as $path) {
+            if ($this->checkFFmpegAtPath($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if FFmpeg exists at a given path.
+     */
+    private function checkFFmpegAtPath(string $path): bool
+    {
+        exec("{$path} -version 2>&1", $output, $returnCode);
         return $returnCode === 0;
     }
 }
