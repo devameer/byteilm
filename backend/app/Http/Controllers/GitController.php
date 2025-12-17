@@ -14,12 +14,12 @@ class GitController extends Controller
 
     public function pull(Request $request)
     {
-        $username = 'devameer';
-        $token = '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';
-        $branch = 'master';
+        $username = env('GITHUB_USERNAME');
+        $token = env('GITHUB_TOKEN');
+        $branch = env('GITHUB_BRANCH');
 
         // Build the remote URL with authentication
-        $remoteUrl = "https://{$username}:{$token}@github.com/devameer/plan.git";
+        $remoteUrl = "https://{$username}:{$token}@github.com/devameer/byteilm.git";
 
         try {
             // Change to project directory
