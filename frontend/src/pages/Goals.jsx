@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
 import {
   TrophyIcon,
   PlusIcon,
@@ -12,90 +11,41 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { TrophyIcon as TrophySolidIcon } from '@heroicons/react/24/solid';
+import { 
+  useGoals, 
+  useGoalStatistics, 
+  useGoalSuggestions, 
+  useGoalLeaderboard,
+  useIncrementGoalProgress,
+  useCompleteGoal 
+} from '../hooks/api';
 
 export default function Goals() {
-  const [goals, setGoals] = useState([]);
-  const [statistics, setStatistics] = useState(null);
-  const [suggestions, setSuggestions] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ type: 'all', status: 'all', category: 'all' });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
 
-  useEffect(() => {
-    fetchGoals();
-    fetchStatistics();
-    fetchSuggestions();
-    fetchLeaderboard();
-  }, [filter]);
+  // React Query hooks
+  const { data: goalsResponse, isLoading: loading } = useGoals(filter);
+  const { data: statisticsResponse } = useGoalStatistics();
+  const { data: suggestionsResponse } = useGoalSuggestions();
+  const { data: leaderboardResponse } = useGoalLeaderboard(5);
+  
+  const incrementProgress = useIncrementGoalProgress();
+  const completeGoal = useCompleteGoal();
 
-  const fetchGoals = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (filter.type !== 'all') params.append('type', filter.type);
-      if (filter.status !== 'all') params.append('status', filter.status);
-      if (filter.category !== 'all') params.append('category', filter.category);
+  // Extract data
+  const goals = goalsResponse?.data || [];
+  const statistics = statisticsResponse?.data || null;
+  const suggestions = suggestionsResponse?.data || [];
+  const leaderboard = leaderboardResponse?.data || [];
 
-      const response = await axios.get(`/goals?${params}`);
-      setGoals(response.data.data);
-    } catch (error) {
-      console.error('Error fetching goals:', error);
-    } finally {
-      setLoading(false);
-    }
+  const incrementGoalProgress = (goalId, amount = 1) => {
+    incrementProgress.mutate({ id: goalId, amount });
   };
 
-  const fetchStatistics = async () => {
-    try {
-      const response = await axios.get('/goals/statistics');
-      setStatistics(response.data.data);
-    } catch (error) {
-      console.error('Error fetching statistics:', error);
-    }
-  };
-
-  const fetchSuggestions = async () => {
-    try {
-      const response = await axios.get('/goals/suggestions');
-      setSuggestions(response.data.data);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-    }
-  };
-
-  const fetchLeaderboard = async () => {
-    try {
-      const response = await axios.get('/goals/leaderboard?limit=5');
-      setLeaderboard(response.data.data);
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    }
-  };
-
-  const incrementGoalProgress = async (goalId, amount = 1) => {
-    try {
-      const response = await axios.post(`/goals/${goalId}/increment`, { amount });
-      if (response.data.success) {
-        fetchGoals();
-        fetchStatistics();
-      }
-    } catch (error) {
-      console.error('Error updating progress:', error);
-    }
-  };
-
-  const markCompleted = async (goalId) => {
-    try {
-      const response = await axios.post(`/goals/${goalId}/complete`);
-      if (response.data.success) {
-        fetchGoals();
-        fetchStatistics();
-        // Show celebration modal/animation
-      }
-    } catch (error) {
-      console.error('Error completing goal:', error);
-    }
+  const markCompleted = (goalId) => {
+    completeGoal.mutate(goalId);
   };
 
   const getStatusColor = (status) => {

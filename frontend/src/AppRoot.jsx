@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ToastProvider, useToast } from "./contexts/ToastContext";
+import { QueryProvider } from "./providers/QueryProvider";
 import Layout from "./components/Layout";
 import { publicRoutes, privateRoutes } from "./routes";
 import LimitReachedModal from "./components/feedback/LimitReachedModal";
@@ -122,13 +123,15 @@ function AppContent() {
 function AppRoot() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <AppContent />
-          </ToastProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <QueryProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <AppContent />
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryProvider>
     </ErrorBoundary>
   );
 }

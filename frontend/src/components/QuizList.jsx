@@ -85,7 +85,7 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
   };
 
   const handleStartQuiz = (quizId) => {
-    navigate(`/quizzes/${quizId}/take`);
+    navigate(`/quizzes/${quizId}`);
   };
 
   const getDifficultyColor = (difficulty) => {

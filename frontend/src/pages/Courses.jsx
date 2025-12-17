@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
-import courseService from "../services/courseService";
+import { useCourses, useCreateCourse, useUpdateCourse, useDeleteCourse, useToggleCourseActive } from "../hooks/api";
 import categoryService from "../services/categoryService";
 import Modal from "../components/Modal";
 import CoursesPageSkeleton from "../components/skeletons/CoursesPageSkeleton";
@@ -17,9 +17,7 @@ const FILTERS = [
 
 function Courses() {
     const { darkMode } = useTheme();
-    const [courses, setCourses] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const [formMode, setFormMode] = useState("create");
@@ -45,14 +43,21 @@ function Courses() {
         resolveFilter(searchParams.get("filter"))
     );
 
+    // Build query params based on filter
+    const queryParams = filter === "active" ? { active: true } : filter === "inactive" ? { active: false } : {};
+    
+    // React Query hooks
+    const { data: coursesResponse, isLoading: loading, refetch: refetchCourses } = useCourses(queryParams);
+    const createCourseMutation = useCreateCourse();
+    const updateCourseMutation = useUpdateCourse();
+    const deleteCourseMutation = useDeleteCourse();
+    const toggleActiveMutation = useToggleCourseActive();
+
+    const courses = coursesResponse?.data || [];
+
     useEffect(() => {
         loadCategories();
     }, []);
-
-    useEffect(() => {
-        loadCourses();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter]);
 
     const loadCategories = async () => {
         try {
@@ -70,51 +75,10 @@ function Courses() {
         setFilter((current) => (current === urlFilter ? current : urlFilter));
     }, [searchParams, resolveFilter]);
 
-    const loadCourses = async () => {
-        setLoading(true);
-        setError("");
-        try {
-            const params = {};
-            if (filter === "active") {
-                params.active = true;
-            } else if (filter === "inactive") {
-                params.active = false;
-            }
-
-            const response = await courseService.getCourses(params);
-            if (response.success) {
-                setCourses(response.data);
-            } else {
-                // If API returns failure but no error, set empty array
-                setCourses([]);
-            }
-        } catch (err) {
-            // Ignore canceled errors (they're not real errors, just duplicate request prevention)
-            if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
-                setLoading(false);
-                return;
-            }
-            // Only show error if it's a real error (not network timeout or canceled)
-            const errorMessage = err?.response?.data?.message || err?.message;
-            if (errorMessage && !errorMessage.includes('timeout') && !errorMessage.includes('canceled')) {
-                setError(errorMessage);
-            } else if (err?.response?.status >= 500) {
-                setError("حدث خطأ في الخادم. يرجى المحاولة لاحقاً");
-            } else if (!err?.response) {
-                // Network error - don't show error, just log it
-                console.error("Network error loading courses:", err);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleToggleActive = async (id) => {
         try {
-            await courseService.toggleActive(id);
-            await loadCourses();
+            await toggleActiveMutation.mutateAsync(id);
         } catch (err) {
-            // Ignore canceled errors
             if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
                 return;
             }
@@ -130,10 +94,8 @@ function Courses() {
             return;
         }
         try {
-            await courseService.deleteCourse(id);
-            await loadCourses();
+            await deleteCourseMutation.mutateAsync(id);
         } catch (err) {
-            // Ignore canceled errors
             if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
                 return;
             }
@@ -209,13 +171,12 @@ function Courses() {
             }
 
             if (formMode === "create") {
-                await courseService.createCourse(payload);
+                await createCourseMutation.mutateAsync(payload);
             } else if (editingId) {
-                await courseService.updateCourse(editingId, payload);
+                await updateCourseMutation.mutateAsync({ id: editingId, data: payload });
             }
 
             setModalOpen(false);
-            await loadCourses();
         } catch (err) {
             // Ignore canceled errors
             if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {

@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../contexts/ThemeContext";
-import lessonService from "../services/lessonService";
-import courseService from "../services/courseService";
-import taskService from "../services/taskService";
+import { useLessons, useCreateLesson, useToggleLessonCompletion, useCourses } from "../hooks/api";
+import { useCreateTask } from "../hooks/api";
 import Modal from "../components/Modal";
 import LessonsPageSkeleton from "../components/skeletons/LessonsPageSkeleton";
 
@@ -18,10 +17,7 @@ const FILTERS = [
 
 function Lessons() {
     const { darkMode } = useTheme();
-    const [lessons, setLessons] = useState([]);
-    const [courses, setCourses] = useState([]);
     const [filter, setFilter] = useState("incomplete");
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -44,105 +40,33 @@ function Lessons() {
     const [addingTask, setAddingTask] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
     const [page, setPage] = useState(1);
-    const [pagination, setPagination] = useState({
-        current_page: 1,
-        last_page: 1,
-        total: 0,
+
+    // Build query params based on filter
+    const queryParams = {
+        page,
         per_page: LESSONS_PER_PAGE,
-    });
-
-    useEffect(() => {
-        loadCourses();
-    }, []);
-
-    useEffect(() => {
-        loadLessons();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter, page]);
-
-    const loadCourses = async () => {
-        try {
-            const response = await courseService.getCourses({ active: true });
-            if (response.success) {
-                setCourses(response.data);
-            }
-        } catch (err) {
-            // ignore course errors, they will be handled in the form when needed
-        }
+        ...(filter === "completed" ? { completed: true } : filter === "incomplete" ? { completed: false } : {})
     };
 
-    const loadLessons = async () => {
-        setLoading(true);
-        setError("");
-        try {
-            const params = {
-                page,
-                per_page: LESSONS_PER_PAGE,
-            };
-            if (filter === "completed") {
-                params.completed = true;
-            } else if (filter === "incomplete") {
-                params.completed = false;
-            }
+    // React Query hooks
+    const { data: lessonsResponse, isLoading: loading, refetch: refetchLessons } = useLessons(queryParams);
+    const { data: coursesResponse } = useCourses({ active: true });
+    const createLessonMutation = useCreateLesson();
+    const toggleCompletionMutation = useToggleLessonCompletion();
+    const createTaskMutation = useCreateTask();
 
-            const response = await lessonService.getLessons(params);
-            if (response.success) {
-                const lessonData = Array.isArray(response.data)
-                    ? response.data
-                    : Array.isArray(response.data?.data)
-                    ? response.data.data
-                    : [];
-                if (response.meta) {
-                    const currentPage = response.meta.current_page ?? page;
-                    const lastPage = response.meta.last_page ?? 1;
-                    if (page > lastPage && lastPage > 0) {
-                        setPage(lastPage);
-                        return;
-                    }
-                    setPagination({
-                        current_page: currentPage,
-                        last_page: lastPage,
-                        total: response.meta.total ?? lessonData.length,
-                        per_page: response.meta.per_page ?? LESSONS_PER_PAGE,
-                    });
-                } else {
-                    setPagination({
-                        current_page: 1,
-                        last_page: 1,
-                        total: lessonData.length,
-                        per_page: LESSONS_PER_PAGE,
-                    });
-                }
-                setLessons(lessonData);
-            } else {
-                // If API returns failure but no error, set empty array
-                setLessons([]);
-            }
-        } catch (err) {
-            // Ignore canceled errors (they're not real errors, just duplicate request prevention)
-            if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
-                setLoading(false);
-                return;
-            }
-            // Only show error if it's a real error (not network timeout or canceled)
-            const errorMessage = err?.response?.data?.message || err?.message;
-            if (errorMessage && !errorMessage.includes('timeout') && !errorMessage.includes('canceled')) {
-                setError(errorMessage);
-            } else if (err?.response?.status >= 500) {
-                setError("حدث خطأ في الخادم. يرجى المحاولة لاحقاً");
-            } else if (!err?.response) {
-                // Network error - don't show error, just log it
-                console.error("Network error loading lessons:", err);
-            }
-        } finally {
-            setLoading(false);
-        }
+    const lessons = lessonsResponse?.data || [];
+    const courses = coursesResponse?.data || [];
+    const pagination = lessonsResponse?.meta || {
+        current_page: 1,
+        last_page: 1,
+        total: lessons.length,
+        per_page: LESSONS_PER_PAGE,
     };
 
     const handleToggleCompletion = async (lessonId) => {
         try {
-            await lessonService.toggleCompletion(lessonId);
-            await loadLessons();
+            await toggleCompletionMutation.mutateAsync(lessonId);
         } catch (err) {
             setError(err.response?.data?.message || "تعذر تحديث حالة الدرس");
         }
@@ -180,9 +104,8 @@ function Lessons() {
                 description: formState.description || null,
             };
 
-            await lessonService.createLesson(payload);
+            await createLessonMutation.mutateAsync(payload);
             setModalOpen(false);
-            await loadLessons();
         } catch (err) {
             setError(err.response?.data?.message || "تعذر إنشاء الدرس");
         } finally {
@@ -222,17 +145,11 @@ function Lessons() {
                 status: "pending",
             };
 
-            const response = await taskService.createTask(payload);
-            if (response.success) {
-                setAddTaskModalOpen(false);
-                setSelectedLesson(null);
-                setSuccessMessage("تمت إضافة الدرس للمهام بنجاح!");
-                setTimeout(() => setSuccessMessage(""), 3000);
-                // Reload lessons to update has_task status
-                await loadLessons();
-            } else {
-                setError(response.message || "تعذر إضافة الدرس للمهام");
-            }
+            await createTaskMutation.mutateAsync(payload);
+            setAddTaskModalOpen(false);
+            setSelectedLesson(null);
+            setSuccessMessage("تمت إضافة الدرس للمهام بنجاح!");
+            setTimeout(() => setSuccessMessage(""), 3000);
         } catch (err) {
             if (err.response?.status === 422) {
                 setError(
@@ -241,8 +158,6 @@ function Lessons() {
                 );
                 setAddTaskModalOpen(false);
                 setSelectedLesson(null);
-                // Reload to refresh has_task status
-                await loadLessons();
             } else {
                 setError(
                     err.response?.data?.message || "تعذر إضافة الدرس للمهام"

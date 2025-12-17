@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -8,37 +7,17 @@ import {
   TrophyIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
+import { useQuizResults } from '../hooks/api';
 
 const QuizResults = () => {
   const { attemptId } = useParams();
   const navigate = useNavigate();
 
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [showExplanations, setShowExplanations] = useState(true);
 
-  useEffect(() => {
-    fetchResults();
-  }, [attemptId]);
-
-  const fetchResults = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`/quiz-attempts/${attemptId}/results`);
-      const data = response.data;
-      if (data.success) {
-        setResults(data.data);
-      } else {
-        alert(data.message);
-        navigate(-1);
-      }
-    } catch (error) {
-      console.error('Error fetching results:', error);
-      alert('فشل تحميل النتائج: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
-    }
-  };
+  // React Query hook
+  const { data: resultsResponse, isLoading: loading, error } = useQuizResults(attemptId);
+  const results = resultsResponse?.data || null;
 
   if (loading) {
     return (

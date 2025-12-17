@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import Chart from "chart.js/auto";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import dashboardService from "../services/dashboardService";
+import { useDashboard } from "../hooks/api";
 import StatsCard from "../components/dashboard/StatsCard";
 import QuickAction from "../components/dashboard/QuickAction";
 import UsageItem from "../components/dashboard/UsageItem";
@@ -12,9 +12,10 @@ import DashboardSkeleton from "../components/skeletons/DashboardSkeleton";
 function Dashboard() {
     const { user } = useAuth();
     const { darkMode } = useTheme();
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    
+    // Use React Query hook
+    const { data: response, isLoading: loading, error } = useDashboard();
+    const data = response?.data;
 
     const formatNumber = (value) => Number(value ?? 0).toLocaleString("en-US");
 
@@ -37,51 +38,6 @@ function Dashboard() {
     const dailyChartInstance = useRef(null);
     const weeklyChartInstance = useRef(null);
     const streakChartInstance = useRef(null);
-
-    useEffect(() => {
-        let ignore = false;
-        const loadDashboard = async () => {
-            setLoading(true);
-            setError("");
-            try {
-                const response = await dashboardService.getDashboard();
-                if (!ignore) {
-                    if (response.success) {
-                        setData(response.data);
-                    } else {
-                        setError("تعذر تحميل بيانات لوحة التحكم");
-                    }
-                }
-            } catch (err) {
-                if (!ignore) {
-                    // Ignore canceled errors (they're not real errors, just duplicate request prevention)
-                    if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
-                        return;
-                    }
-                    // Only show error if it's a real error (not network timeout or canceled)
-                    const errorMessage = err?.response?.data?.message || err?.message;
-                    if (errorMessage && !errorMessage.includes('timeout') && !errorMessage.includes('canceled')) {
-                        setError(errorMessage);
-                    } else if (err?.response?.status >= 500) {
-                        setError("حدث خطأ في الخادم. يرجى المحاولة لاحقاً");
-                    } else if (!err?.response) {
-                        // Network error - don't show error, just log it
-                        console.error("Network error loading dashboard:", err);
-                    }
-                }
-            } finally {
-                if (!ignore) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        loadDashboard();
-
-        return () => {
-            ignore = true;
-        };
-    }, []);
 
     const summary = data?.summary;
     const charts = data?.charts;
@@ -301,6 +257,7 @@ function Dashboard() {
     }
 
     if (error) {
+        const errorMessage = error?.response?.data?.message || error?.message || "تعذر تحميل بيانات لوحة التحكم";
         return (
             <div className={`border-2 p-6 rounded-2xl transition-colors duration-300 ${
                 darkMode
@@ -311,7 +268,7 @@ function Dashboard() {
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <span className="font-bold">{error}</span>
+                    <span className="font-bold">{errorMessage}</span>
                 </div>
             </div>
         );

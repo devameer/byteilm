@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import { useStartQuiz, useSaveQuizAnswer, useSubmitQuiz } from '../hooks/api';
 
 const QuizTake = () => {
   const { quizId } = useParams();
@@ -21,6 +21,11 @@ const QuizTake = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [questionStartTime, setQuestionStartTime] = useState(null);
+
+  // React Query mutations
+  const startQuizMutation = useStartQuiz();
+  const saveAnswerMutation = useSaveQuizAnswer();
+  const submitQuizMutation = useSubmitQuiz();
 
   useEffect(() => {
     startQuiz();
@@ -52,8 +57,7 @@ const QuizTake = () => {
   const startQuiz = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`/quizzes/${quizId}/start`);
-      const data = response.data;
+      const data = await startQuizMutation.mutateAsync(quizId);
       if (data.success) {
         setAttempt(data.data);
         setQuiz(data.data.quiz);
@@ -83,10 +87,11 @@ const QuizTake = () => {
     const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000);
 
     try {
-      await axios.post(`/quiz-attempts/${attempt.attempt_id}/answer`, {
-        question_id: questionId,
-        answer: answer,
-        time_spent: timeSpent
+      await saveAnswerMutation.mutateAsync({
+        attemptId: attempt.attempt_id,
+        questionId,
+        answer,
+        timeSpent
       });
     } catch (error) {
       console.error('Error saving answer:', error);
@@ -130,8 +135,7 @@ const QuizTake = () => {
 
     try {
       setSubmitting(true);
-      const response = await axios.post(`/quiz-attempts/${attempt.attempt_id}/submit`);
-      const data = response.data;
+      const data = await submitQuizMutation.mutateAsync(attempt.attempt_id);
       if (data.success) {
         navigate(`/quiz-results/${attempt.attempt_id}`);
       }
