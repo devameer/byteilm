@@ -152,31 +152,53 @@ class GitApiController extends Controller
      */
     public function checkStatus()
     {
+        $configuredPath = env('FFMPEG_PATH');
+        $homePath = getenv('HOME');
+        $currentUser = get_current_user();
+
         $status = [
             'php_version' => PHP_VERSION,
             'os' => PHP_OS,
             'exec_enabled' => function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions')))),
+            'home_path' => $homePath,
+            'current_user' => $currentUser,
+            'configured_ffmpeg_path' => $configuredPath,
             'ffmpeg' => [
                 'available' => false,
                 'version' => null,
                 'path' => null,
                 'error' => null,
+                'tried_paths' => [],
+                'ffmpeg_path' => $configuredPath,
             ],
         ];
 
         // Check FFmpeg
         if ($status['exec_enabled']) {
             try {
-                // Try different FFmpeg paths common on cPanel
+                // Try paths in order
                 $ffmpegPaths = [
+                    $configuredPath, // From .env
                     'ffmpeg',
                     '/usr/bin/ffmpeg',
                     '/usr/local/bin/ffmpeg',
                     '/opt/cpanel/composer/bin/ffmpeg',
+                    $homePath . '/bin/ffmpeg', // ~/bin/ffmpeg
+                    '/home/' . $currentUser . '/bin/ffmpeg',
                 ];
 
                 foreach ($ffmpegPaths as $path) {
+                    if (empty($path))
+                        continue;
+
+                    $result = ['path' => $path, 'exists' => file_exists($path), 'executable' => is_executable($path)];
+
                     exec("{$path} -version 2>&1", $output, $returnCode);
+                    $result['return_code'] = $returnCode;
+                    $result['output'] = $output[0] ?? null;
+
+                    $status['ffmpeg']['tried_paths'][] = $result;
+
                     if ($returnCode === 0) {
                         $status['ffmpeg']['available'] = true;
                         $status['ffmpeg']['path'] = $path;
@@ -187,7 +209,7 @@ class GitApiController extends Controller
                 }
 
                 if (!$status['ffmpeg']['available']) {
-                    $status['ffmpeg']['error'] = 'FFmpeg not found in any standard path';
+                    $status['ffmpeg']['error'] = 'FFmpeg not found or not executable';
                 }
             } catch (\Exception $e) {
                 $status['ffmpeg']['error'] = $e->getMessage();
