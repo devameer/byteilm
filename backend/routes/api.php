@@ -182,7 +182,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Subtitle Generation Routes (AI-powered)
         Route::post('/video/transcribe', [LessonSubtitleApiController::class, 'transcribe']);
-        Route::post('/video/transcribe-stt', [LessonSubtitleApiController::class, 'transcribeWithSTT']); // Google Speech-to-Text (accurate timestamps)
         Route::post('/video/transcribe/start', [LessonSubtitleApiController::class, 'startTranscription']); // Async start
         Route::get('/video/transcribe/status', [LessonSubtitleApiController::class, 'getTranscriptionStatus']); // Polling status
         Route::post('/video/translate-arabic', [LessonSubtitleApiController::class, 'translateToArabic']); // Kept for backward compatibility

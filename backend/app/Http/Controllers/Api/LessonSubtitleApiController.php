@@ -10,7 +10,7 @@ use App\Models\TranscriptionJob;
 use App\Services\SubtitleService;
 use App\Services\GeminiService;
 use App\Services\AudioExtractionService;
-use App\Services\GoogleSpeechToTextService;
+use App\Services\AssemblyAIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -21,30 +21,22 @@ class LessonSubtitleApiController extends Controller
     protected SubtitleService $subtitleService;
     protected GeminiService $geminiService;
     protected AudioExtractionService $audioService;
-    protected ?GoogleSpeechToTextService $sttService = null;
+    protected AssemblyAIService $assemblyAIService;
 
     public function __construct(
         SubtitleService $subtitleService,
         GeminiService $geminiService,
-        AudioExtractionService $audioService
+        AudioExtractionService $audioService,
+        AssemblyAIService $assemblyAIService
     ) {
         $this->subtitleService = $subtitleService;
         $this->geminiService = $geminiService;
         $this->audioService = $audioService;
-
-        // Initialize STT service only if configured
-        if (env('GOOGLE_CLOUD_PROJECT_ID') && env('GOOGLE_APPLICATION_CREDENTIALS')) {
-            try {
-                $this->sttService = app(GoogleSpeechToTextService::class);
-            } catch (\Exception $e) {
-                \Log::warning('Google STT service not available: ' . $e->getMessage());
-            }
-        }
+        $this->assemblyAIService = $assemblyAIService;
 
         // Apply usage limit middleware to AI-powered methods
         $this->middleware('usage.limit:ai_requests')->only([
             'transcribe',
-            'transcribeWithSTT',
             'translateToArabic',
             'translate'
         ]);
@@ -290,15 +282,14 @@ class LessonSubtitleApiController extends Controller
     }
 
     /**
-     * Transcribe video to text with timestamps using Gemini AI.
+     * Transcribe video to text with timestamps using AssemblyAI.
      * 
-     * This method uses audio extraction + Base64 encoding for faster
-     * processing and to avoid Cloudflare timeout issues.
+     * Uses S3 URL directly when available for better performance.
      */
     public function transcribe(Request $request, $lessonId)
     {
-        // Increase max execution time for audio extraction and transcription
-        set_time_limit(300);
+        // Increase max execution time for transcription
+        set_time_limit(600); // 10 minutes for AssemblyAI polling
 
         $lesson = Lesson::with('video')->findOrFail($lessonId);
 
@@ -307,6 +298,14 @@ class LessonSubtitleApiController extends Controller
                 'success' => false,
                 'message' => 'لا يوجد فيديو لهذا الدرس. الرجاء رفع الفيديو أولاً.',
             ], 404);
+        }
+
+        // Check if AssemblyAI is configured
+        if (!$this->assemblyAIService->isAvailable()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'خدمة AssemblyAI غير مهيأة. أضف ASSEMBLYAI_API_KEY في ملف .env',
+            ], 500);
         }
 
         $audioPath = null;
@@ -323,15 +322,47 @@ class LessonSubtitleApiController extends Controller
                 ], 404);
             }
 
-            \Log::info('🚀 Starting audio extraction transcription', [
+            \Log::info('🚀 Starting AssemblyAI transcription', [
                 'lesson_id' => $lessonId,
                 'video_id' => $lesson->video->id,
                 'file_size' => number_format($lesson->video->file_size / 1024 / 1024, 2) . ' MB',
                 'disk' => $disk,
             ]);
 
-            // Step 1: Extract audio from video
-            \Log::info('🎵 Extracting audio from video...');
+            // Check if we can use S3 URL directly (faster - no download needed)
+            if ($disk === 's3') {
+                \Log::info('📡 Using S3 URL directly for AssemblyAI...');
+
+                // Generate temporary presigned URL for AssemblyAI to access
+                $s3Url = Storage::disk('s3')->temporaryUrl(
+                    $lesson->video->file_path,
+                    now()->addHours(1) // URL valid for 1 hour
+                );
+
+                \Log::info('🎤 Starting transcription with AssemblyAI (S3 direct)...');
+                $result = $this->assemblyAIService->transcribeFromUrl($s3Url);
+
+                $transcript = $result['text'];
+
+                \Log::info('✅ AssemblyAI transcription completed (S3 direct)', [
+                    'transcript_length' => strlen($transcript),
+                    'word_count' => count($result['words'] ?? []),
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'تم التفريغ بنجاح باستخدام AssemblyAI',
+                    'data' => [
+                        'transcript' => $transcript,
+                        'lesson_name' => $lesson->name,
+                        'word_count' => count($result['words'] ?? []),
+                        'method' => 's3_direct',
+                    ],
+                ]);
+            }
+
+            // Fallback: Extract audio and use Base64 (for local storage)
+            \Log::info('🎵 Extracting audio from video (local storage)...');
             $audioData = $this->audioService->extractAudioFromVideo(
                 $lesson->video->file_path,
                 $disk
@@ -344,23 +375,26 @@ class LessonSubtitleApiController extends Controller
                 'truncated' => $audioData['truncated'] ?? false,
             ]);
 
-            // Step 2: Encode audio as Base64
+            // Encode audio as Base64
             \Log::info('📦 Encoding audio as Base64...');
             $base64Audio = base64_encode(file_get_contents($audioPath));
 
-            // Step 3: Transcribe using Gemini
-            \Log::info('🎤 Starting transcription with Gemini...');
-            $transcript = $this->geminiService->transcribeAudio(
+            // Transcribe using AssemblyAI
+            \Log::info('🎤 Starting transcription with AssemblyAI...');
+            $result = $this->assemblyAIService->transcribeFromBase64(
                 $base64Audio,
                 $audioData['mime_type'] ?? 'audio/mpeg'
             );
 
-            \Log::info('✅ Transcription completed successfully', [
+            $transcript = $result['text'];
+
+            \Log::info('✅ AssemblyAI transcription completed', [
                 'transcript_length' => strlen($transcript),
+                'word_count' => count($result['words'] ?? []),
             ]);
 
             // Prepare response message
-            $message = 'تم التفريغ بنجاح';
+            $message = 'تم التفريغ بنجاح باستخدام AssemblyAI';
             if (!empty($audioData['truncated'])) {
                 $maxMinutes = floor($this->audioService->getMaxDurationSeconds() / 60);
                 $message .= " (تم تفريغ أول {$maxMinutes} دقيقة من الفيديو)";
@@ -374,6 +408,8 @@ class LessonSubtitleApiController extends Controller
                     'lesson_name' => $lesson->name,
                     'audio_duration' => $audioData['duration'],
                     'truncated' => $audioData['truncated'] ?? false,
+                    'word_count' => count($result['words'] ?? []),
+                    'method' => 'base64',
                 ],
             ]);
         } catch (\Exception $e) {
@@ -389,120 +425,6 @@ class LessonSubtitleApiController extends Controller
             ], 500);
         } finally {
             // Cleanup temp audio file
-            if ($audioPath) {
-                $this->audioService->cleanup($audioPath);
-            }
-        }
-    }
-
-    /**
-     * Transcribe video using Google Speech-to-Text V2.
-     * Provides accurate word-level timestamps.
-     * 
-     * @param Request $request
-     * @param int $lessonId
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function transcribeWithSTT(Request $request, $lessonId)
-    {
-        // Increase max execution time
-        set_time_limit(600);
-
-        if (!$this->sttService) {
-            return response()->json([
-                'success' => false,
-                'message' => 'خدمة Google Speech-to-Text غير مُهيأة. تأكد من إضافة GOOGLE_CLOUD_PROJECT_ID و GOOGLE_APPLICATION_CREDENTIALS في ملف .env',
-            ], 500);
-        }
-
-        $lesson = Lesson::with('video')->findOrFail($lessonId);
-
-        if (!$lesson->video) {
-            return response()->json([
-                'success' => false,
-                'message' => 'لا يوجد فيديو لهذا الدرس.',
-            ], 404);
-        }
-
-        $audioPath = null;
-
-        try {
-            $disk = config('filesystems.default');
-
-            if (!Storage::disk($disk)->exists($lesson->video->file_path)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'لم يتم العثور على ملف الفيديو.',
-                ], 404);
-            }
-
-            \Log::info('🚀 Starting Google STT transcription', [
-                'lesson_id' => $lessonId,
-                'video_id' => $lesson->video->id,
-            ]);
-
-            // Step 1: Extract audio as WAV (mono 16kHz)
-            \Log::info('🎵 Extracting audio for STT...');
-            $audioData = $this->audioService->extractAudioForSTT(
-                $lesson->video->file_path,
-                $disk
-            );
-            $audioPath = $audioData['path'];
-
-            \Log::info('✅ Audio extracted', [
-                'size' => number_format($audioData['size'] / 1024 / 1024, 2) . ' MB',
-                'duration' => $audioData['duration'] . 's',
-            ]);
-
-            // Step 2: Check if sync or async needed
-            $duration = $audioData['duration'];
-
-            if ($this->sttService->shouldUseAsync($duration)) {
-                // For now, we'll still use sync for simplicity
-                // TODO: Implement async with GCS upload
-                \Log::warning('Audio longer than 60s, may timeout. Consider async.');
-            }
-
-            // Step 3: Transcribe with Google STT
-            \Log::info('🎤 Starting Google STT recognition...');
-            $result = $this->sttService->recognizeSync($audioPath);
-
-            \Log::info('✅ Transcription completed', [
-                'word_count' => count($result['words'] ?? []),
-            ]);
-
-            // Prepare response message
-            $message = 'تم التفريغ بنجاح باستخدام Google Speech-to-Text';
-            if (!empty($audioData['truncated'])) {
-                $maxMinutes = floor($audioData['duration'] / 60);
-                $message .= " (تم تفريغ أول {$maxMinutes} دقيقة)";
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => $message,
-                'data' => [
-                    'transcript' => $result['segments'],
-                    'vtt' => $result['vtt'],
-                    'words' => $result['words'],
-                    'lesson_name' => $lesson->name,
-                    'audio_duration' => $audioData['duration'],
-                    'truncated' => $audioData['truncated'] ?? false,
-                ],
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('❌ Google STT transcription error', [
-                'lesson_id' => $lessonId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء التفريغ: ' . $e->getMessage(),
-            ], 500);
-
-        } finally {
             if ($audioPath) {
                 $this->audioService->cleanup($audioPath);
             }

@@ -88,9 +88,9 @@ export default function SubtitleGenerator({ lessonId, video, onSuccess }) {
                 });
             }, 1000); // Faster interval for audio (1 second)
 
-            // Use Google Speech-to-Text endpoint for accurate timestamps
+            // Use original synchronous endpoint
             const transcribeResponse = await axios.post(
-                `/lessons/${lessonId}/video/transcribe-stt`
+                `/lessons/${lessonId}/video/transcribe`
             );
 
             // Stop progress simulation

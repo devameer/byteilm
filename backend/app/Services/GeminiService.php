@@ -360,13 +360,42 @@ Every line of text you return must contain a timestamp.
                     'systemInstruction' => [
                         'parts' => [
                             [
-                                'text' => "You are a professional audio transcriber. Your ONLY task is to output timestamped transcripts. 
-CRITICAL RULES:
-- Every line MUST start with [HH:MM:SS] timestamp
-- Timestamps must mark the EXACT start of speech (first phoneme)
-- If unsure about timing, ALWAYS bias EARLIER, not later
-- Never add introductions, conclusions, or commentary
-- Output ONLY the transcript with timestamps"
+                                'text' => "You are a professional audio transcriber. Your ONLY task is to output a timestamped transcript.
+
+ABSOLUTE OUTPUT RULES:
+- Output ONLY transcript lines. No WEBVTT, no numbering, no headers, no notes.
+- Every single line MUST start with a timestamp exactly in this format: [HH:MM:SS]
+- After the timestamp, write the spoken text on the same line.
+
+TIMESTAMP ACCURACY (CRITICAL):
+- The timestamp MUST be the exact moment speech begins (first audible phoneme) for that line.
+- If you are unsure between two possible seconds, ALWAYS choose the EARLIER second.
+- Never delay a timestamp to “match the end” of the previous line.
+
+SEGMENTATION (THIS IS THE KEY):
+- Keep each line SHORT: target 2–4 seconds of speech per line (MAX 5 seconds).
+- Start a NEW line whenever ANY of the following happens:
+  1) A new sentence starts, OR
+  2) A pause of ~0.3 seconds or more occurs, OR
+  3) The speaker changes, OR
+  4) The speaker takes a breath/shift that would sound like a natural break.
+- Do NOT merge multiple sentences into one line.
+
+SPEAKERS:
+- If multiple speakers are present, label them after the timestamp:
+  [HH:MM:SS] Speaker 1: ...
+  [HH:MM:SS] Speaker 2: ...
+- If unknown, use Speaker Unknown.
+
+FIDELITY:
+- Transcribe verbatim as spoken.
+- Keep language as-is (English stays English, Arabic stays Arabic).
+- Do not correct wording unless the speaker clearly says it that way.
+
+START NOW:
+Return the transcript in the exact required format.
+
+"
                             ]
                         ]
                     ],
@@ -587,26 +616,27 @@ NAME: اسم اللغة
     /**
      * Convert timestamped text to VTT format
      * 
-     * @param string $text Transcribed text with timestamps
-     * @param int $offsetSeconds Seconds to subtract from timestamps (default: 2)
+     * Preserves the original timestamps from the transcription.
+     * 
+     * @param string $text Transcribed text with timestamps [HH:MM:SS]
+     * @param int $offsetSeconds Seconds to subtract from timestamps (default: 0 for AssemblyAI)
      */
-    public function convertToVTT(string $text, int $offsetSeconds = 2): string
+    public function convertToVTT(string $text, int $offsetSeconds = 0): string
     {
         // VTT header
         $vtt = "WEBVTT\n\n";
 
         $lines = explode("\n", $text);
-        $counter = 1;
-        $currentTime = '00:00:00.000';
-        $pendingText = [];
 
+        // First pass: collect all segments with their timestamps
+        $segments = [];
         foreach ($lines as $line) {
             $line = trim($line);
             if (empty($line))
                 continue;
 
-            // التحقق من وجود طابع زمني
-            if (preg_match('/\[(\d{1,2}):(\d{2}):(\d{2})\]|\[(\d{1,2}):(\d{2})\]/', $line, $matches)) {
+            // Check for timestamp [HH:MM:SS] or [MM:SS]
+            if (preg_match('/\[(\d{1,2}):(\d{2}):(\d{2})\]|^\[(\d{1,2}):(\d{2})\]/', $line, $matches)) {
                 $hours = $minutes = $seconds = 0;
 
                 if (!empty($matches[1])) { // [HH:MM:SS]
@@ -619,55 +649,66 @@ NAME: اسم اللغة
                     $seconds = (int) $matches[5];
                 }
 
-                // تحويل إلى ثواني وطرح offset للتعويض عن التأخير
+                // Apply offset
                 $totalSeconds = ($hours * 3600) + ($minutes * 60) + $seconds;
-                $adjustedSeconds = max(0, $totalSeconds - $offsetSeconds); // طرح offset (الحد الأدنى 0)
+                $adjustedSeconds = max(0, $totalSeconds - $offsetSeconds);
 
-                // إعادة تحويل إلى HH:MM:SS
-                $adjHours = floor($adjustedSeconds / 3600);
-                $adjMinutes = floor(($adjustedSeconds % 3600) / 60);
-                $adjSeconds = $adjustedSeconds % 60;
-                $nextTime = sprintf('%02d:%02d:%02d.000', $adjHours, $adjMinutes, $adjSeconds);
+                // Extract text content (remove timestamp and speaker label)
+                $textContent = preg_replace('/\[\d{1,2}:\d{2}(:\d{2})?\]\s*(Speaker \w+:\s*)?/', '', $line);
+                $textContent = trim($textContent);
 
-                // إذا كان هناك نص معلق من الطابع الزمني السابق، قم بإضافته الآن
-                if (!empty($pendingText) && $currentTime != $nextTime) {
-                    $vtt .= "{$counter}\n";
-                    $vtt .= "{$currentTime} --> {$nextTime}\n";
-                    $vtt .= implode("\n", $pendingText) . "\n\n";
-
-                    $counter++;
-                    $pendingText = [];
-                }
-
-                // حدّث الوقت الحالي وابدأ بتجميع النص الجديد
-                $currentTime = $nextTime;
-                $textContent = trim(preg_replace('/\[[\d:]+\]\s*/', '', $line));
                 if (!empty($textContent)) {
-                    $pendingText[] = $textContent;
+                    $segments[] = [
+                        'start_seconds' => $adjustedSeconds,
+                        'text' => $textContent
+                    ];
                 }
-            } else if (!empty($line) && $counter > 1) {
-                // إذا كان السطر بدون طابع زمني، أضفه إلى النص المعلق الحالي
-                $pendingText[] = $line;
             }
         }
 
-        // لإضافة المقطع الأخير بمدة افتراضية (5 ثوانٍ) إذا تبقى نص
-        if (!empty($pendingText)) {
-            $timeParts = explode(':', str_replace('.000', '', $currentTime));
-            $totalSeconds = ((int) $timeParts[0] * 3600) + ((int) $timeParts[1] * 60) + (int) $timeParts[2] + 5;
+        // Second pass: generate VTT with proper end times
+        $counter = 1;
+        $segmentCount = count($segments);
 
-            $nextHours = floor($totalSeconds / 3600);
-            $totalSeconds %= 3600;
-            $nextMinutes = floor($totalSeconds / 60);
-            $nextSeconds = $totalSeconds % 60;
-            $nextTime = sprintf('%02d:%02d:%02d.000', $nextHours, $nextMinutes, $nextSeconds);
+        for ($i = 0; $i < $segmentCount; $i++) {
+            $segment = $segments[$i];
+            $startSeconds = $segment['start_seconds'];
+
+            // End time is the start of next segment, or start + 5 seconds for last segment
+            if ($i < $segmentCount - 1) {
+                $endSeconds = $segments[$i + 1]['start_seconds'];
+                // Ensure minimum duration of 1 second
+                if ($endSeconds <= $startSeconds) {
+                    $endSeconds = $startSeconds + 3;
+                }
+            } else {
+                $endSeconds = $startSeconds + 5; // Last segment: add 5 seconds
+            }
+
+            // Format timestamps
+            $startTime = $this->formatSecondsToVTT($startSeconds);
+            $endTime = $this->formatSecondsToVTT($endSeconds);
 
             $vtt .= "{$counter}\n";
-            $vtt .= "{$currentTime} --> {$nextTime}\n";
-            $vtt .= implode("\n", $pendingText) . "\n\n";
+            $vtt .= "{$startTime} --> {$endTime}\n";
+            $vtt .= $segment['text'] . "\n\n";
+
+            $counter++;
         }
 
         return $vtt;
+    }
+
+    /**
+     * Format seconds to VTT timestamp format HH:MM:SS.mmm
+     */
+    private function formatSecondsToVTT(int $totalSeconds): string
+    {
+        $hours = floor($totalSeconds / 3600);
+        $minutes = floor(($totalSeconds % 3600) / 60);
+        $seconds = $totalSeconds % 60;
+
+        return sprintf('%02d:%02d:%02d.000', $hours, $minutes, $seconds);
     }
 
     /**

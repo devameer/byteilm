@@ -49,4 +49,8 @@ return [
         'download_timeout' => env('YOUTUBE_DOWNLOAD_TIMEOUT', 300),
     ],
 
+    'assemblyai' => [
+        'api_key' => env('ASSEMBLYAI_API_KEY'),
+    ],
+
 ];
