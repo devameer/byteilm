@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useUpdateLesson } from '../../hooks/api';
 import { useTheme } from '../../contexts/ThemeContext';
+import axios from 'axios'; // Keep for transcribe/summarize
 
 export default function LessonSummary({ lessonId, initialSummary, onUpdate, video }) {
     const { darkMode } = useTheme();
     const [summary, setSummary] = useState(initialSummary || '');
     const [isEditing, setIsEditing] = useState(false);
-    const [saving, setSaving] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState(null);
     const [hasChanges, setHasChanges] = useState(false);
+
+    const updateLessonMutation = useUpdateLesson();
+    const saving = updateLessonMutation.isPending;
 
     useEffect(() => {
         setSummary(initialSummary || '');
@@ -21,25 +24,17 @@ export default function LessonSummary({ lessonId, initialSummary, onUpdate, vide
             return;
         }
 
-        setSaving(true);
         setError(null);
 
         try {
-            const response = await axios.put(`/lessons/${lessonId}`, {
-                summary: summary,
-            });
-
-            if (response.data.success) {
-                setIsEditing(false);
-                setHasChanges(false);
-                if (onUpdate) {
-                    onUpdate(summary);
-                }
+            await updateLessonMutation.mutateAsync({ id: lessonId, data: { summary } });
+            setIsEditing(false);
+            setHasChanges(false);
+            if (onUpdate) {
+                onUpdate(summary);
             }
         } catch (err) {
             setError(err.response?.data?.message || 'فشل حفظ الملخص');
-        } finally {
-            setSaving(false);
         }
     };
 

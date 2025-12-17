@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import {
+  useIntegrations,
+  useConnectIntegration,
+  useDisconnectIntegration,
+  useTestIntegration,
+  useSyncIntegration,
+  useUpdateIntegrationSettings,
+  useIntegrationLogs,
+  useIntegrationStatistics
+} from '../hooks/api';
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -12,9 +21,6 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Integrations = () => {
-  const [connectedIntegrations, setConnectedIntegrations] = useState([]);
-  const [availableIntegrations, setAvailableIntegrations] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedIntegration, setSelectedIntegration] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
@@ -24,30 +30,22 @@ const Integrations = () => {
   const [syncing, setSyncing] = useState({});
   const [testing, setTesting] = useState({});
 
-  useEffect(() => {
-    fetchIntegrations();
-  }, []);
+  // React Query hooks
+  const { data: integrationsResponse, isLoading: loading, refetch: fetchIntegrations } = useIntegrations();
+  const connectMutation = useConnectIntegration();
+  const disconnectMutation = useDisconnectIntegration();
+  const testMutation = useTestIntegration();
+  const syncMutation = useSyncIntegration();
+  const updateSettingsMutation = useUpdateIntegrationSettings();
 
-  const fetchIntegrations = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/integrations');
-      if (response.data.success) {
-        setConnectedIntegrations(response.data.data.connected);
-        setAvailableIntegrations(response.data.data.available);
-      }
-    } catch (error) {
-      console.error('Error fetching integrations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const connectedIntegrations = integrationsResponse?.data?.connected || [];
+  const availableIntegrations = integrationsResponse?.data?.available || [];
 
   const handleConnect = async (provider) => {
     try {
-      const response = await axios.get(`/integrations/auth/${provider}`);
-      if (response.data.success) {
-        window.location.href = response.data.data.auth_url;
+      const response = await connectMutation.mutateAsync(provider);
+      if (response.success) {
+        window.location.href = response.data.auth_url;
       }
     } catch (error) {
       console.error('Error connecting integration:', error);
@@ -61,11 +59,8 @@ const Integrations = () => {
     }
 
     try {
-      const response = await axios.delete(`/integrations/${integrationId}`);
-      if (response.data.success) {
-        alert('تم فصل التكامل بنجاح');
-        fetchIntegrations();
-      }
+      await disconnectMutation.mutateAsync(integrationId);
+      alert('تم فصل التكامل بنجاح');
     } catch (error) {
       console.error('Error disconnecting integration:', error);
       alert('فشل فصل التكامل. حاول مرة أخرى.');
@@ -76,11 +71,11 @@ const Integrations = () => {
     try {
       setTesting({ ...testing, [integrationId]: true });
 
-      const response = await axios.post(`/integrations/${integrationId}/test`);
-      if (response.data.success) {
+      const response = await testMutation.mutateAsync(integrationId);
+      if (response.success) {
         alert('الاتصال يعمل بنجاح ✓');
       } else {
-        alert('فشل اختبار الاتصال: ' + response.data.message);
+        alert('فشل اختبار الاتصال: ' + response.message);
       }
     } catch (error) {
       console.error('Error testing connection:', error);
@@ -94,12 +89,11 @@ const Integrations = () => {
     try {
       setSyncing({ ...syncing, [integrationId]: true });
 
-      const response = await axios.post(`/integrations/${integrationId}/sync`);
-      if (response.data.success) {
+      const response = await syncMutation.mutateAsync(integrationId);
+      if (response.success) {
         alert('تمت المزامنة بنجاح ✓');
-        fetchIntegrations();
       } else {
-        alert('فشلت المزامنة: ' + response.data.message);
+        alert('فشلت المزامنة: ' + response.message);
       }
     } catch (error) {
       console.error('Error syncing:', error);
@@ -111,12 +105,9 @@ const Integrations = () => {
 
   const handleUpdateSettings = async (integrationId, settings) => {
     try {
-      const response = await axios.put(`/integrations/${integrationId}`, settings);
-      if (response.data.success) {
-        alert('تم تحديث الإعدادات بنجاح');
-        fetchIntegrations();
-        setShowSettings(false);
-      }
+      await updateSettingsMutation.mutateAsync({ id: integrationId, settings });
+      alert('تم تحديث الإعدادات بنجاح');
+      setShowSettings(false);
     } catch (error) {
       console.error('Error updating settings:', error);
       alert('فشل تحديث الإعدادات');
@@ -125,9 +116,10 @@ const Integrations = () => {
 
   const fetchLogs = async (integrationId) => {
     try {
-      const response = await axios.get(`/integrations/${integrationId}/logs`);
-      if (response.data.success) {
-        setLogs(response.data.data.data);
+      const response = await fetch(`/api/integrations/${integrationId}/logs`);
+      const data = await response.json();
+      if (data.success) {
+        setLogs(data.data.data);
         setShowLogs(true);
       }
     } catch (error) {
@@ -137,9 +129,10 @@ const Integrations = () => {
 
   const fetchStatisticsData = async (integrationId) => {
     try {
-      const response = await axios.get(`/integrations/${integrationId}/statistics`);
-      if (response.data.success) {
-        setStatistics(response.data.data);
+      const response = await fetch(`/api/integrations/${integrationId}/statistics`);
+      const data = await response.json();
+      if (data.success) {
+        setStatistics(data.data);
         setShowStatistics(true);
       }
     } catch (error) {

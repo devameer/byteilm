@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useLessonQuizzes, useGenerateQuiz, useDeleteQuiz } from '../hooks/api';
 import {
   PlayIcon,
   ClockIcon,
@@ -14,9 +14,6 @@ import {
 
 const QuizList = ({ lessonId, isInstructor = false }) => {
   const navigate = useNavigate();
-  const [quizzes, setQuizzes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generateOptions, setGenerateOptions] = useState({
     num_questions: 10,
@@ -28,42 +25,22 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
     language: 'ar'
   });
 
-  useEffect(() => {
-    if (lessonId) {
-      fetchQuizzes();
-    }
-  }, [lessonId]);
+  // React Query hooks
+  const { data: quizzesResponse, isLoading: loading } = useLessonQuizzes(lessonId);
+  const generateQuizMutation = useGenerateQuiz();
+  const deleteQuizMutation = useDeleteQuiz();
 
-  const fetchQuizzes = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`/lessons/${lessonId}/quizzes`);
-      if (response.data.success) {
-        setQuizzes(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching quizzes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const quizzes = quizzesResponse?.data || [];
+  const generating = generateQuizMutation.isPending;
 
   const handleGenerateQuiz = async () => {
     try {
-      setGenerating(true);
-      const response = await axios.post(`/lessons/${lessonId}/quizzes/generate`, generateOptions);
-      if (response.data.success) {
-        alert('تم إنشاء الاختبار بنجاح باستخدام الذكاء الاصطناعي!');
-        setShowGenerateModal(false);
-        fetchQuizzes();
-      } else {
-        alert('فشل إنشاء الاختبار: ' + response.data.message);
-      }
+      await generateQuizMutation.mutateAsync({ lessonId, options: generateOptions });
+      alert('تم إنشاء الاختبار بنجاح باستخدام الذكاء الاصطناعي!');
+      setShowGenerateModal(false);
     } catch (error) {
       console.error('Error generating quiz:', error);
       alert('فشل إنشاء الاختبار: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -73,11 +50,8 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
     }
 
     try {
-      const response = await axios.delete(`/quizzes/${quizId}`);
-      if (response.data.success) {
-        alert('تم حذف الاختبار بنجاح');
-        fetchQuizzes();
-      }
+      await deleteQuizMutation.mutateAsync(quizId);
+      alert('تم حذف الاختبار بنجاح');
     } catch (error) {
       console.error('Error deleting quiz:', error);
       alert('فشل حذف الاختبار');

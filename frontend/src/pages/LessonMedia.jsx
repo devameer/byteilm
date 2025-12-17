@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useTheme } from "../contexts/ThemeContext";
+import { useLesson } from "../hooks/api";
 import ChunkedVideoUploader from "../components/lesson/ChunkedVideoUploader";
 import SubtitleUploader from "../components/lesson/SubtitleUploader";
 import SubtitleGenerator from "../components/lesson/SubtitleGenerator";
@@ -9,87 +9,44 @@ import EnhancedVideoPlayer from "../components/lesson/EnhancedVideoPlayer";
 import LessonSummary from "../components/lesson/LessonSummary";
 import LessonMediaSkeleton from "../components/skeletons/LessonMediaSkeleton";
 import QuizList from "../components/QuizList";
+import axios from "axios"; // Keep for video fetch
 
 export default function LessonMedia() {
     const { darkMode } = useTheme();
     const { id } = useParams();
     const navigate = useNavigate();
-    const [lesson, setLesson] = useState(null);
     const [video, setVideo] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState("view"); // view, upload, summary
     const [focusAIGenerator, setFocusAIGenerator] = useState(false);
-    const fetchingRef = useRef(false);
+    const [videoLoading, setVideoLoading] = useState(true);
 
+    // Use React Query for lesson data
+    const { data: lessonResponse, isLoading: loading } = useLesson(id);
+    const lesson = lessonResponse?.data || null;
+
+    // Fetch video when lesson is loaded
     useEffect(() => {
-        fetchLesson();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id]);
-
-    const fetchLesson = async () => {
-        console.log('📚 [LessonMedia] Fetching lesson:', id);
-
-        // Prevent duplicate requests
-        if (fetchingRef.current) {
-            console.log('⏭️ [LessonMedia] Already fetching, skipping');
-            return;
+        if (lesson && id) {
+            fetchVideo();
         }
-        fetchingRef.current = true;
+    }, [lesson, id]);
+
+    const fetchVideo = async () => {
         try {
-            setLoading(true);
-            setError(null);
-
-            // Fetch lesson data first
-            console.log('📥 [LessonMedia] Fetching lesson data...');
-            const lessonRes = await axios.get(`/lessons/${id}`);
-            const lessonData = lessonRes.data.data || lessonRes.data;
-            console.log('✅ [LessonMedia] Lesson data loaded:', lessonData);
-            setLesson(lessonData);
-
-            // Then fetch video data separately
-            try {
-                console.log('📥 [LessonMedia] Fetching video data...');
-                const videoRes = await axios.get(`/lessons/${id}/video`);
-                const videoData = videoRes.data.data;
-                console.log('✅ [LessonMedia] Video data loaded:', {
-                    has_video: !!videoData,
-                    proxy_video_url: videoData?.proxy_video_url,
-                    video_url: videoData?.video_url,
-                    mime_type: videoData?.mime_type,
-                    subtitles_count: videoData?.subtitles?.length || 0,
-                    subtitles: videoData?.subtitles
-                });
-                setVideo(videoData);
-            } catch (videoErr) {
-                // Video not found is OK - just means no video uploaded yet
-                if (videoErr.response?.status === 404) {
-                    console.log('ℹ️ [LessonMedia] No video found (404), switching to upload tab');
-                    setVideo(null);
-                    setActiveTab("upload"); // Auto-switch to upload tab
-                } else {
-                    // Other video errors - log but don't fail the whole page
-                    console.warn('⚠️ [LessonMedia] Failed to load video:', videoErr);
-                    setVideo(null);
-                }
-            }
-        } catch (err) {
-            console.error('❌ [LessonMedia] Error loading lesson:', err);
-
-            // Better error message based on status
-            const status = err.response?.status;
-            const defaultMsg = err.response?.data?.message || "فشل تحميل بيانات الدرس";
-
-            if (status === 404) {
-                setError("الدرس غير موجود أو ليس لديك صلاحية الوصول إليه");
-            } else if (status === 403) {
-                setError("ليس لديك صلاحية للوصول إلى هذا الدرس");
+            setVideoLoading(true);
+            const videoRes = await axios.get(`/lessons/${id}/video`);
+            setVideo(videoRes.data.data);
+        } catch (videoErr) {
+            if (videoErr.response?.status === 404) {
+                setVideo(null);
+                setActiveTab("upload");
             } else {
-                setError(defaultMsg);
+                console.warn('⚠️ [LessonMedia] Failed to load video:', videoErr);
+                setVideo(null);
             }
         } finally {
-            setLoading(false);
-            fetchingRef.current = false;
+            setVideoLoading(false);
         }
     };
 

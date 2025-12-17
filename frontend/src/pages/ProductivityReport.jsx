@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useMemo } from 'react';
+import { useReportTypes, useProductivityReport } from '../hooks/api';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { CalendarIcon, ChartBarIcon, ClockIcon, TrophyIcon, FireIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
@@ -9,78 +9,43 @@ import { API_BASE_URL } from '../config';
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
 
 export default function ProductivityReport() {
-  const [loading, setLoading] = useState(false);
-  const [reportData, setReportData] = useState(null);
   const [dateRange, setDateRange] = useState('this_month');
   const [customDates, setCustomDates] = useState({
     start_date: '',
     end_date: ''
   });
-  const [presetPeriods, setPresetPeriods] = useState([]);
 
-  useEffect(() => {
-    fetchPresetPeriods();
-  }, []);
+  // React Query hooks
+  const { data: typesResponse } = useReportTypes();
+  const presetPeriods = typesResponse?.data?.preset_periods || [];
 
-  useEffect(() => {
-    if (dateRange !== 'custom') {
-      fetchReport();
+  // Get current period dates
+  const getCurrentDates = useMemo(() => {
+    if (dateRange === 'custom') {
+      return { start: customDates.start_date, end: customDates.end_date };
     }
-  }, [dateRange]);
+    const period = presetPeriods.find(p => p.id === dateRange);
+    return period ? { start: period.start_date, end: period.end_date } : { start: '', end: '' };
+  }, [dateRange, customDates, presetPeriods]);
 
-  const fetchPresetPeriods = async () => {
-    try {
-      const response = await axios.get('/reports/types');
-      setPresetPeriods(response.data.data.preset_periods);
-    } catch (error) {
-      console.error('Error fetching periods:', error);
-    }
-  };
-
-  const fetchReport = async () => {
-    setLoading(true);
-
-    try {
-      let params = '';
-
-      if (dateRange === 'custom') {
-        params = `?start_date=${customDates.start_date}&end_date=${customDates.end_date}`;
-      } else {
-        const period = presetPeriods.find(p => p.id === dateRange);
-        if (period) {
-          params = `?start_date=${period.start_date}&end_date=${period.end_date}`;
-        }
-      }
-
-      const response = await axios.get(`/reports/productivity${params}`);
-      setReportData(response.data.data);
-    } catch (error) {
-      console.error('Error fetching report:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: reportResponse, isLoading: loading } = useProductivityReport(
+    getCurrentDates.start,
+    getCurrentDates.end
+  );
+  const reportData = reportResponse?.data || null;
 
   const handleCustomDateSubmit = (e) => {
     e.preventDefault();
-    fetchReport();
+    // The query will automatically refetch when dates change
   };
 
   const exportPDF = () => {
-    const period = presetPeriods.find(p => p.id === dateRange);
-    const params = dateRange === 'custom'
-      ? `?start_date=${customDates.start_date}&end_date=${customDates.end_date}`
-      : `?start_date=${period.start_date}&end_date=${period.end_date}`;
-
+    const params = `?start_date=${getCurrentDates.start}&end_date=${getCurrentDates.end}`;
     window.open(`${API_BASE_URL}/api/reports/productivity/export/pdf${params}`, '_blank');
   };
 
   const exportExcel = () => {
-    const period = presetPeriods.find(p => p.id === dateRange);
-    const params = dateRange === 'custom'
-      ? `?start_date=${customDates.start_date}&end_date=${customDates.end_date}`
-      : `?start_date=${period.start_date}&end_date=${period.end_date}`;
-
+    const params = `?start_date=${getCurrentDates.start}&end_date=${getCurrentDates.end}`;
     window.open(`${API_BASE_URL}/api/reports/productivity/export/excel${params}`, '_blank');
   };
 

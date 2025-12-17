@@ -5,6 +5,7 @@ import axios from 'axios';
 export const quizKeys = {
   all: ['quizzes'],
   lists: () => [...quizKeys.all, 'list'],
+  lessonQuizzes: (lessonId) => [...quizKeys.all, 'lesson', lessonId],
   details: () => [...quizKeys.all, 'detail'],
   detail: (id) => [...quizKeys.details(), id],
   attempt: (attemptId) => ['quiz-attempts', attemptId],
@@ -14,6 +15,9 @@ export const quizKeys = {
 // Quiz API functions
 const quizApi = {
   getQuizzes: (filters) => axios.get('/quizzes', { params: filters }).then(res => res.data),
+  getLessonQuizzes: (lessonId) => axios.get(`/lessons/${lessonId}/quizzes`).then(res => res.data),
+  generateQuiz: (lessonId, options) => axios.post(`/lessons/${lessonId}/quizzes/generate`, options).then(res => res.data),
+  deleteQuiz: (quizId) => axios.delete(`/quizzes/${quizId}`).then(res => res.data),
   startQuiz: (quizId) => axios.post(`/quizzes/${quizId}/start`).then(res => res.data),
   saveAnswer: (attemptId, data) => axios.post(`/quiz-attempts/${attemptId}/answer`, data).then(res => res.data),
   submitQuiz: (attemptId) => axios.post(`/quiz-attempts/${attemptId}/submit`).then(res => res.data),
@@ -31,6 +35,17 @@ export const useQuizzes = (filters = {}) => {
 };
 
 /**
+ * Hook to fetch lesson quizzes
+ */
+export const useLessonQuizzes = (lessonId) => {
+  return useQuery({
+    queryKey: quizKeys.lessonQuizzes(lessonId),
+    queryFn: () => quizApi.getLessonQuizzes(lessonId),
+    enabled: !!lessonId,
+  });
+};
+
+/**
  * Hook to fetch quiz results
  */
 export const useQuizResults = (attemptId) => {
@@ -38,6 +53,32 @@ export const useQuizResults = (attemptId) => {
     queryKey: quizKeys.results(attemptId),
     queryFn: () => quizApi.getResults(attemptId),
     enabled: !!attemptId,
+  });
+};
+
+/**
+ * Hook to generate quiz
+ */
+export const useGenerateQuiz = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lessonId, options }) => quizApi.generateQuiz(lessonId, options),
+    onSuccess: (_, { lessonId }) => {
+      queryClient.invalidateQueries({ queryKey: quizKeys.lessonQuizzes(lessonId) });
+    },
+  });
+};
+
+/**
+ * Hook to delete quiz
+ */
+export const useDeleteQuiz = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (quizId) => quizApi.deleteQuiz(quizId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: quizKeys.all });
+    },
   });
 };
 
