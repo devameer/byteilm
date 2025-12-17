@@ -1,0 +1,137 @@
+.fullcalendar-wrapper {
+    direction: rtl;
+}
+
+.fc {
+    direction: rtl;
+}
+
+.fc-direction-rtl .fc-toolbar > * > :not(:first-child) {
+    margin-right: 0.75em;
+}
+
+.fc-event-custom {
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fc-event-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.fc-event-urgent {
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+}
+
+.fc-event-high {
+    background-color: #f97316 !important;
+    border-color: #f97316 !important;
+}
+
+.fc-event-lesson {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+}
+
+.fc-event-task {
+    background-color: #8b5cf6 !important;
+    border-color: #8b5cf6 !important;
+}
+
+.fc-event-overdue {
+    background: repeating-linear-gradient(
+        45deg,
+        #dc2626,
+        #dc2626 10px,
+        #991b1b 10px,
+        #991b1b 20px
+    ) !important;
+}
+
+.fc-header-toolbar {
+    margin-bottom: 1.5rem !important;
+}
+
+.fc-toolbar-title {
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+    color: #111827;
+}
+
+.fc-button {
+    background-color: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.5rem !important;
+}
+
+.fc-button:hover {
+    background-color: #4338ca !important;
+    border-color: #4338ca !important;
+}
+
+.fc-button-active {
+    background-color: #4338ca !important;
+    border-color: #4338ca !important;
+}
+
+.fc-daygrid-day-number {
+    font-weight: 600;
+    color: #374151;
+    padding: 0.5rem;
+}
+
+.fc-day-today {
+    background-color: #dbeafe !important;
+}
+
+.fc-daygrid-day-top {
+    flex-direction: row-reverse;
+}
+
+.fc-col-header-cell-cushion {
+    font-weight: 700;
+    color: #1f2937;
+    padding: 0.75rem;
+}
+
+.fc-timegrid-slot-label {
+    font-weight: 600;
+}
+
+.fc-list-event-title {
+    font-weight: 600;
+}
+
+.fc-h-event .fc-event-main {
+    color: white;
+}
+
+.fc-daygrid-event {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.fc-scrollgrid {
+    border-color: #e5e7eb !important;
+}
+
+.fc-scrollgrid td {
+    border-color: #e5e7eb !important;
+}
+
+.fc-theme-standard th {
+    border-color: #e5e7eb !important;
+}
+
+.fc-theme-standard td {
+    border-color: #e5e7eb !important;
+}

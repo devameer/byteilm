@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "ask": [
+      "Read(!/mnt/d/devameer/new plan/**)",
+      "Edit(!/mnt/d/devameer/new plan/**)"
+    ],
+    "allow": [
+      "Read(/mnt/d/devameer/new plan/**)",
+      "Edit(/mnt/d/devameer/new plan/**)"
+    ]
+  },
+  "memoryImport": {},
+  "monitoring": {}
+}
