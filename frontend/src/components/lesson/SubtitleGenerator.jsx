@@ -21,9 +21,9 @@ export default function SubtitleGenerator({ lessonId, video, onSuccess }) {
     const stepLabels = {
         initializing: "تهيئة العملية...",
         preparing: "تحضير الفيديو...",
-        uploading: "رفع الفيديو...",
-        processing: "معالجة الملف...",
-        transcribing: "تفريغ الفيديو...",
+        extracting: "استخراج الصوت من الفيديو...",
+        encoding: "تحويل الصوت...",
+        transcribing: "تفريغ الصوت...",
         completed: "اكتمل التفريغ!",
         failed: "فشل التفريغ",
     };
@@ -73,24 +73,24 @@ export default function SubtitleGenerator({ lessonId, video, onSuccess }) {
             const progressInterval = setInterval(() => {
                 setProgress(prev => {
                     if (prev < 90) {
-                        const increment = Math.random() * 5 + 1;
+                        const increment = Math.random() * 8 + 2; // Faster progress for audio extraction
                         const newProgress = Math.min(prev + increment, 90);
                         
                         // Update step label based on progress
-                        if (newProgress < 20) setCurrentStepLabel("رفع الفيديو...");
-                        else if (newProgress < 50) setCurrentStepLabel("معالجة الملف...");
-                        else if (newProgress < 80) setCurrentStepLabel("تفريغ الفيديو...");
+                        if (newProgress < 30) setCurrentStepLabel("استخراج الصوت من الفيديو...");
+                        else if (newProgress < 50) setCurrentStepLabel("تحويل الصوت...");
+                        else if (newProgress < 80) setCurrentStepLabel("تفريغ الصوت بالذكاء الاصطناعي...");
                         else setCurrentStepLabel("إنهاء العملية...");
                         
                         return newProgress;
                     }
                     return prev;
                 });
-            }, 2000);
+            }, 1000); // Faster interval for audio (1 second)
 
-            // Use original synchronous endpoint
+            // Use Google Speech-to-Text endpoint for accurate timestamps
             const transcribeResponse = await axios.post(
-                `/lessons/${lessonId}/video/transcribe`
+                `/lessons/${lessonId}/video/transcribe-stt`
             );
 
             // Stop progress simulation
@@ -628,15 +628,15 @@ export default function SubtitleGenerator({ lessonId, video, onSuccess }) {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                 <h4 className="font-medium mb-2">ملاحظات:</h4>
                 <ul className="space-y-1 list-disc list-inside">
-                    <li>الحد الأقصى لحجم الفيديو للتفريغ التلقائي: 20 ميجابايت</li>
+                    <li>يتم استخراج الصوت من الفيديو لتسريع عملية التفريغ</li>
                     <li>
-                        يستخدم هذا النظام Gemini AI لتفريغ الفيديو تلقائياً
+                        يستخدم هذا النظام Gemini AI لتفريغ الصوت تلقائياً
                     </li>
+                    <li>الحد الأقصى للتفريغ: أول 20 دقيقة من الفيديو</li>
                     <li>يتم تحديد لغة النص تلقائياً بعد التفريغ</li>
                     <li>يتم استخراج النص مرة واحدة فقط، ثم ترجمته للغات الأخرى</li>
-                    <li>للفيديوهات الأكبر من 20 ميجابايت، يرجى رفع ملف الترجمة يدوياً</li>
                     <li>يمكنك إضافة ترجمات لأي لغة من اللغات المدعومة</li>
-                    <li>عملية التفريغ سريعة للفيديوهات الصغيرة (أقل من دقيقة عادةً)</li>
+                    <li>عملية التفريغ سريعة (عادةً أقل من دقيقة)</li>
                     <li>تأكد من إضافة GEMINI_API_KEY في ملف .env</li>
                 </ul>
             </div>

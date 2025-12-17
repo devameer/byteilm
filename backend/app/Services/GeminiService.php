@@ -338,20 +338,38 @@ Every line of text you return must contain a timestamp.
     }
 
     /**
-     * Transcribe media (audio/video) to text with timestamps using Base64
-     *
-     * NOTE: This method is kept for backward compatibility and small files only.
-     * For better performance and larger files, use uploadFileFromUrl() + transcribeMediaFromFile()
-     *
-     * @deprecated This method has memory limitations. Use File API methods instead.
+     * Transcribe audio to text with timestamps using Base64.
+     * 
+     * Uses systemInstruction and generationConfig for better timestamp accuracy.
+     * 
+     * @param string $base64Data Base64 encoded audio data
+     * @param string $mimeType Audio MIME type (e.g., 'audio/mpeg', 'audio/mp3')
+     * @return string Transcribed text with timestamps
      */
-    public function transcribeMedia(string $base64Data, string $mimeType): string
+    public function transcribeAudio(string $base64Data, string $mimeType = 'audio/mpeg'): string
     {
-        Log::warning('⚠️ Using deprecated transcribeMedia() with Base64. Consider using File API for better performance.');
+        Log::info('🎤 Starting audio transcription with Base64', [
+            'data_size' => strlen($base64Data),
+            'mime_type' => $mimeType,
+        ]);
 
         try {
             $response = Http::timeout(300)
                 ->post("{$this->baseUrl}/models/gemini-2.0-flash-exp:generateContent?key={$this->apiKey}", [
+                    // System instruction for consistent behavior
+                    'systemInstruction' => [
+                        'parts' => [
+                            [
+                                'text' => "You are a professional audio transcriber. Your ONLY task is to output timestamped transcripts. 
+CRITICAL RULES:
+- Every line MUST start with [HH:MM:SS] timestamp
+- Timestamps must mark the EXACT start of speech (first phoneme)
+- If unsure about timing, ALWAYS bias EARLIER, not later
+- Never add introductions, conclusions, or commentary
+- Output ONLY the transcript with timestamps"
+                            ]
+                        ]
+                    ],
                     'contents' => [
                         [
                             'parts' => [
@@ -362,49 +380,61 @@ Every line of text you return must contain a timestamp.
                                     ]
                                 ],
                                 [
-                                    'text' => "
-
-Please transcribe this audio or video clip into text.
-
-Strict Rules:
-
-Add a timestamp [HH:MM:SS] at the beginning of each new sentence or paragraph.
-
-The timestamp must match the exact beginning of the spoken sentence, with no delay.
-
-Try to distinguish speakers if possible (e.g., Speaker 1, Speaker 2).
-
-Do not add any introductions or notes—only the transcribed text with timestamps.
-
-Every line of text you return must contain a timestamp.
-"
-
+                                    'text' => "Transcribe this audio into short segments (maximum 3-5 seconds per line).
+Format: [HH:MM:SS] Text here
+- Put timestamp at the FIRST sound of each segment
+- If multiple speakers, label them (Speaker 1, Speaker 2)
+- Start immediately with the first timestamp, no introduction"
                                 ]
                             ]
                         ]
+                    ],
+                    // Generation config for deterministic output
+                    'generationConfig' => [
+                        'temperature' => 0,
+                        'topP' => 0.1,
+                        'maxOutputTokens' => 8192,
                     ]
                 ]);
 
             if (!$response->successful()) {
-                Log::error('Gemini API transcription error', [
+                Log::error('Gemini API audio transcription error', [
                     'status' => $response->status(),
                     'body' => $response->body()
                 ]);
-                throw new Exception('فشل في تفريغ الفيديو: ' . $response->body());
+                throw new Exception('فشل في تفريغ الصوت: ' . $response->body());
             }
 
             $data = $response->json();
 
             if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
-                return $data['candidates'][0]['content']['parts'][0]['text'];
+                $transcript = $data['candidates'][0]['content']['parts'][0]['text'];
+                Log::info('✅ Audio transcription completed', [
+                    'transcript_length' => strlen($transcript),
+                ]);
+                return $transcript;
             }
 
             throw new Exception('لم يتم العثور على نص في استجابة API');
         } catch (Exception $e) {
-            Log::error('Gemini transcription error: ' . $e->getMessage());
+            Log::error('Gemini audio transcription error: ' . $e->getMessage());
             throw new Exception('حدث خطأ أثناء التفريغ: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Transcribe media (audio/video) to text with timestamps using Base64
+     *
+     * NOTE: This method is kept for backward compatibility.
+     * For audio transcription, use transcribeAudio() instead.
+     * 
+     * @deprecated Use transcribeAudio() for better performance.
+     */
+    public function transcribeMedia(string $base64Data, string $mimeType): string
+    {
+        return $this->transcribeAudio($base64Data, $mimeType);
+    }
+
 
     /**
      * Detect the language of the given text
@@ -556,17 +586,19 @@ NAME: اسم اللغة
 
     /**
      * Convert timestamped text to VTT format
+     * 
+     * @param string $text Transcribed text with timestamps
+     * @param int $offsetSeconds Seconds to subtract from timestamps (default: 2)
      */
-    public function convertToVTT(string $text): string
+    public function convertToVTT(string $text, int $offsetSeconds = 2): string
     {
         // VTT header
         $vtt = "WEBVTT\n\n";
 
-        // 3. إصلاح المنطق بالكامل
         $lines = explode("\n", $text);
         $counter = 1;
         $currentTime = '00:00:00.000';
-        $pendingText = []; // لتجميع النص بين الطوابع الزمنية
+        $pendingText = [];
 
         foreach ($lines as $line) {
             $line = trim($line);
@@ -575,29 +607,36 @@ NAME: اسم اللغة
 
             // التحقق من وجود طابع زمني
             if (preg_match('/\[(\d{1,2}):(\d{2}):(\d{2})\]|\[(\d{1,2}):(\d{2})\]/', $line, $matches)) {
-                $hours = $minutes = $seconds = '00';
+                $hours = $minutes = $seconds = 0;
 
                 if (!empty($matches[1])) { // [HH:MM:SS]
-                    $hours = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
-                    $minutes = $matches[2];
-                    $seconds = $matches[3];
+                    $hours = (int) $matches[1];
+                    $minutes = (int) $matches[2];
+                    $seconds = (int) $matches[3];
                 } else if (!empty($matches[4])) { // [MM:SS]
-                    $hours = '00';
-                    $minutes = str_pad($matches[4], 2, '0', STR_PAD_LEFT);
-                    $seconds = $matches[5];
+                    $hours = 0;
+                    $minutes = (int) $matches[4];
+                    $seconds = (int) $matches[5];
                 }
 
-                $nextTime = "{$hours}:{$minutes}:{$seconds}.000";
+                // تحويل إلى ثواني وطرح offset للتعويض عن التأخير
+                $totalSeconds = ($hours * 3600) + ($minutes * 60) + $seconds;
+                $adjustedSeconds = max(0, $totalSeconds - $offsetSeconds); // طرح offset (الحد الأدنى 0)
+
+                // إعادة تحويل إلى HH:MM:SS
+                $adjHours = floor($adjustedSeconds / 3600);
+                $adjMinutes = floor(($adjustedSeconds % 3600) / 60);
+                $adjSeconds = $adjustedSeconds % 60;
+                $nextTime = sprintf('%02d:%02d:%02d.000', $adjHours, $adjMinutes, $adjSeconds);
 
                 // إذا كان هناك نص معلق من الطابع الزمني السابق، قم بإضافته الآن
-                // تأكد من أن الوقت الجديد لا يساوي الوقت القديم (لتجنب مقاطع بمدة صفر)
                 if (!empty($pendingText) && $currentTime != $nextTime) {
                     $vtt .= "{$counter}\n";
                     $vtt .= "{$currentTime} --> {$nextTime}\n";
                     $vtt .= implode("\n", $pendingText) . "\n\n";
 
                     $counter++;
-                    $pendingText = []; // أفرغ النص المعلق
+                    $pendingText = [];
                 }
 
                 // حدّث الوقت الحالي وابدأ بتجميع النص الجديد
@@ -607,15 +646,15 @@ NAME: اسم اللغة
                     $pendingText[] = $textContent;
                 }
             } else if (!empty($line) && $counter > 1) {
-                // إذا كان السطر بدون طابع زمني (وهو ليس السطر الأول)، أضفه إلى النص المعلق الحالي
+                // إذا كان السطر بدون طابع زمني، أضفه إلى النص المعلق الحالي
                 $pendingText[] = $line;
             }
         }
 
-        // لإضافة المقطع الأخير بمدة افتراضية (مثلاً 5 ثوانٍ) إذا تبقى نص
+        // لإضافة المقطع الأخير بمدة افتراضية (5 ثوانٍ) إذا تبقى نص
         if (!empty($pendingText)) {
             $timeParts = explode(':', str_replace('.000', '', $currentTime));
-            $totalSeconds = ((int) $timeParts[0] * 3600) + ((int) $timeParts[1] * 60) + (int) $timeParts[2] + 5; // إضافة 5 ثوانٍ افتراضية
+            $totalSeconds = ((int) $timeParts[0] * 3600) + ((int) $timeParts[1] * 60) + (int) $timeParts[2] + 5;
 
             $nextHours = floor($totalSeconds / 3600);
             $totalSeconds %= 3600;

@@ -9,6 +9,8 @@ use App\Models\LessonVideo;
 use App\Models\TranscriptionJob;
 use App\Services\SubtitleService;
 use App\Services\GeminiService;
+use App\Services\AudioExtractionService;
+use App\Services\GoogleSpeechToTextService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,15 +20,31 @@ class LessonSubtitleApiController extends Controller
 {
     protected SubtitleService $subtitleService;
     protected GeminiService $geminiService;
+    protected AudioExtractionService $audioService;
+    protected ?GoogleSpeechToTextService $sttService = null;
 
-    public function __construct(SubtitleService $subtitleService, GeminiService $geminiService)
-    {
+    public function __construct(
+        SubtitleService $subtitleService,
+        GeminiService $geminiService,
+        AudioExtractionService $audioService
+    ) {
         $this->subtitleService = $subtitleService;
         $this->geminiService = $geminiService;
+        $this->audioService = $audioService;
+
+        // Initialize STT service only if configured
+        if (env('GOOGLE_CLOUD_PROJECT_ID') && env('GOOGLE_APPLICATION_CREDENTIALS')) {
+            try {
+                $this->sttService = app(GoogleSpeechToTextService::class);
+            } catch (\Exception $e) {
+                \Log::warning('Google STT service not available: ' . $e->getMessage());
+            }
+        }
 
         // Apply usage limit middleware to AI-powered methods
         $this->middleware('usage.limit:ai_requests')->only([
             'transcribe',
+            'transcribeWithSTT',
             'translateToArabic',
             'translate'
         ]);
@@ -273,11 +291,14 @@ class LessonSubtitleApiController extends Controller
 
     /**
      * Transcribe video to text with timestamps using Gemini AI.
+     * 
+     * This method uses audio extraction + Base64 encoding for faster
+     * processing and to avoid Cloudflare timeout issues.
      */
     public function transcribe(Request $request, $lessonId)
     {
-        // Increase max execution time for video transcription (up to 15 minutes)
-        set_time_limit(900);
+        // Increase max execution time for audio extraction and transcription
+        set_time_limit(300);
 
         $lesson = Lesson::with('video')->findOrFail($lessonId);
 
@@ -288,22 +309,11 @@ class LessonSubtitleApiController extends Controller
             ], 404);
         }
 
+        $audioPath = null;
+
         try {
             // Determine storage disk (S3 or local)
             $disk = config('filesystems.default');
-
-            // Get file size
-            $fileSize = $lesson->video->file_size;
-
-            // Gemini File API supports up to 2GB
-            $maxSize = 2 * 1024 * 1024 * 1024; // 2GB max
-
-            if ($fileSize > $maxSize) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'حجم الفيديو كبير جداً للتفريغ التلقائي. الحد الأقصى المسموح 2 جيجابايت. للفيديوهات الأكبر، يرجى رفع ملف الترجمة يدوياً.',
-                ], 422);
-            }
 
             // Check if video file exists
             if (!Storage::disk($disk)->exists($lesson->video->file_path)) {
@@ -313,47 +323,57 @@ class LessonSubtitleApiController extends Controller
                 ], 404);
             }
 
-            // Get MIME type
-            $mimeType = $lesson->video->mime_type ?? 'video/mp4';
-
-            // Generate a temporary presigned URL for the video
-            $videoUrl = $this->getVideoPresignedUrl($lesson->video, $disk);
-
-            \Log::info('🚀 Starting Gemini File API transcription', [
+            \Log::info('🚀 Starting audio extraction transcription', [
                 'lesson_id' => $lessonId,
                 'video_id' => $lesson->video->id,
-                'file_size' => number_format($fileSize / 1024 / 1024, 2) . ' MB',
-                'mime_type' => $mimeType,
+                'file_size' => number_format($lesson->video->file_size / 1024 / 1024, 2) . ' MB',
                 'disk' => $disk,
             ]);
 
-            // Step 1: Upload file to Gemini File API
-            \Log::info('📤 Uploading video to Gemini File API...');
-            $fileData = $this->geminiService->uploadFileFromUrl(
-                $videoUrl,
-                $mimeType,
-                'lesson_' . $lesson->id . '_video'
+            // Step 1: Extract audio from video
+            \Log::info('🎵 Extracting audio from video...');
+            $audioData = $this->audioService->extractAudioFromVideo(
+                $lesson->video->file_path,
+                $disk
             );
+            $audioPath = $audioData['path'];
 
-            \Log::info('✅ Video uploaded successfully to Gemini', [
-                'file_uri' => $fileData['uri'],
-                'file_name' => $fileData['name'],
+            \Log::info('✅ Audio extracted successfully', [
+                'audio_size' => number_format($audioData['size'] / 1024 / 1024, 2) . ' MB',
+                'duration' => $audioData['duration'] . ' seconds',
+                'truncated' => $audioData['truncated'] ?? false,
             ]);
 
-            // Step 2: Transcribe using File API
-            \Log::info('🎤 Starting transcription from uploaded file...');
-            $transcript = $this->geminiService->transcribeMediaFromFile($fileData['uri']);
+            // Step 2: Encode audio as Base64
+            \Log::info('📦 Encoding audio as Base64...');
+            $base64Audio = base64_encode(file_get_contents($audioPath));
+
+            // Step 3: Transcribe using Gemini
+            \Log::info('🎤 Starting transcription with Gemini...');
+            $transcript = $this->geminiService->transcribeAudio(
+                $base64Audio,
+                $audioData['mime_type'] ?? 'audio/mpeg'
+            );
 
             \Log::info('✅ Transcription completed successfully', [
                 'transcript_length' => strlen($transcript),
             ]);
 
+            // Prepare response message
+            $message = 'تم التفريغ بنجاح';
+            if (!empty($audioData['truncated'])) {
+                $maxMinutes = floor($this->audioService->getMaxDurationSeconds() / 60);
+                $message .= " (تم تفريغ أول {$maxMinutes} دقيقة من الفيديو)";
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'تم التفريغ بنجاح',
+                'message' => $message,
                 'data' => [
                     'transcript' => $transcript,
                     'lesson_name' => $lesson->name,
+                    'audio_duration' => $audioData['duration'],
+                    'truncated' => $audioData['truncated'] ?? false,
                 ],
             ]);
         } catch (\Exception $e) {
@@ -367,6 +387,125 @@ class LessonSubtitleApiController extends Controller
                 'success' => false,
                 'message' => 'حدث خطأ أثناء التفريغ: ' . $e->getMessage(),
             ], 500);
+        } finally {
+            // Cleanup temp audio file
+            if ($audioPath) {
+                $this->audioService->cleanup($audioPath);
+            }
+        }
+    }
+
+    /**
+     * Transcribe video using Google Speech-to-Text V2.
+     * Provides accurate word-level timestamps.
+     * 
+     * @param Request $request
+     * @param int $lessonId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function transcribeWithSTT(Request $request, $lessonId)
+    {
+        // Increase max execution time
+        set_time_limit(600);
+
+        if (!$this->sttService) {
+            return response()->json([
+                'success' => false,
+                'message' => 'خدمة Google Speech-to-Text غير مُهيأة. تأكد من إضافة GOOGLE_CLOUD_PROJECT_ID و GOOGLE_APPLICATION_CREDENTIALS في ملف .env',
+            ], 500);
+        }
+
+        $lesson = Lesson::with('video')->findOrFail($lessonId);
+
+        if (!$lesson->video) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يوجد فيديو لهذا الدرس.',
+            ], 404);
+        }
+
+        $audioPath = null;
+
+        try {
+            $disk = config('filesystems.default');
+
+            if (!Storage::disk($disk)->exists($lesson->video->file_path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'لم يتم العثور على ملف الفيديو.',
+                ], 404);
+            }
+
+            \Log::info('🚀 Starting Google STT transcription', [
+                'lesson_id' => $lessonId,
+                'video_id' => $lesson->video->id,
+            ]);
+
+            // Step 1: Extract audio as WAV (mono 16kHz)
+            \Log::info('🎵 Extracting audio for STT...');
+            $audioData = $this->audioService->extractAudioForSTT(
+                $lesson->video->file_path,
+                $disk
+            );
+            $audioPath = $audioData['path'];
+
+            \Log::info('✅ Audio extracted', [
+                'size' => number_format($audioData['size'] / 1024 / 1024, 2) . ' MB',
+                'duration' => $audioData['duration'] . 's',
+            ]);
+
+            // Step 2: Check if sync or async needed
+            $duration = $audioData['duration'];
+
+            if ($this->sttService->shouldUseAsync($duration)) {
+                // For now, we'll still use sync for simplicity
+                // TODO: Implement async with GCS upload
+                \Log::warning('Audio longer than 60s, may timeout. Consider async.');
+            }
+
+            // Step 3: Transcribe with Google STT
+            \Log::info('🎤 Starting Google STT recognition...');
+            $result = $this->sttService->recognizeSync($audioPath);
+
+            \Log::info('✅ Transcription completed', [
+                'word_count' => count($result['words'] ?? []),
+            ]);
+
+            // Prepare response message
+            $message = 'تم التفريغ بنجاح باستخدام Google Speech-to-Text';
+            if (!empty($audioData['truncated'])) {
+                $maxMinutes = floor($audioData['duration'] / 60);
+                $message .= " (تم تفريغ أول {$maxMinutes} دقيقة)";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'data' => [
+                    'transcript' => $result['segments'],
+                    'vtt' => $result['vtt'],
+                    'words' => $result['words'],
+                    'lesson_name' => $lesson->name,
+                    'audio_duration' => $audioData['duration'],
+                    'truncated' => $audioData['truncated'] ?? false,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('❌ Google STT transcription error', [
+                'lesson_id' => $lessonId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء التفريغ: ' . $e->getMessage(),
+            ], 500);
+
+        } finally {
+            if ($audioPath) {
+                $this->audioService->cleanup($audioPath);
+            }
         }
     }
 
