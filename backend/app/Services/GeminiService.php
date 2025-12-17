@@ -670,24 +670,30 @@ NAME: اسم اللغة
         $counter = 1;
         $segmentCount = count($segments);
 
+        // Overlap buffer in milliseconds (500ms = 0.5 seconds)
+        // This prevents subtitles from disappearing too early
+        $overlapMs = 500;
+
         for ($i = 0; $i < $segmentCount; $i++) {
             $segment = $segments[$i];
             $startSeconds = $segment['start_seconds'];
 
-            // End time is the start of next segment, or start + 5 seconds for last segment
+            // End time is the start of next segment + overlap, or start + 5 seconds for last segment
             if ($i < $segmentCount - 1) {
-                $endSeconds = $segments[$i + 1]['start_seconds'];
-                // Ensure minimum duration of 1 second
-                if ($endSeconds <= $startSeconds) {
-                    $endSeconds = $startSeconds + 3;
+                $nextStartSeconds = $segments[$i + 1]['start_seconds'];
+                // Add overlap so subtitle stays a bit longer
+                $endSeconds = $nextStartSeconds;
+                // Ensure minimum duration of 2 seconds
+                if ($endSeconds <= $startSeconds + 1) {
+                    $endSeconds = $startSeconds + 2;
                 }
             } else {
                 $endSeconds = $startSeconds + 5; // Last segment: add 5 seconds
             }
 
-            // Format timestamps
+            // Format timestamps with milliseconds for overlap
             $startTime = $this->formatSecondsToVTT($startSeconds);
-            $endTime = $this->formatSecondsToVTT($endSeconds);
+            $endTime = $this->formatSecondsToVTTWithMs($endSeconds, $overlapMs);
 
             $vtt .= "{$counter}\n";
             $vtt .= "{$startTime} --> {$endTime}\n";
@@ -709,6 +715,18 @@ NAME: اسم اللغة
         $seconds = $totalSeconds % 60;
 
         return sprintf('%02d:%02d:%02d.000', $hours, $minutes, $seconds);
+    }
+
+    /**
+     * Format seconds to VTT timestamp with additional milliseconds
+     */
+    private function formatSecondsToVTTWithMs(int $totalSeconds, int $additionalMs = 0): string
+    {
+        $hours = floor($totalSeconds / 3600);
+        $minutes = floor(($totalSeconds % 3600) / 60);
+        $seconds = $totalSeconds % 60;
+
+        return sprintf('%02d:%02d:%02d.%03d', $hours, $minutes, $seconds, $additionalMs);
     }
 
     /**
