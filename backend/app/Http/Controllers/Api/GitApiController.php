@@ -146,4 +146,59 @@ class GitApiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Check server status for FFmpeg and other tools.
+     */
+    public function checkStatus()
+    {
+        $status = [
+            'php_version' => PHP_VERSION,
+            'os' => PHP_OS,
+            'exec_enabled' => function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions')))),
+            'ffmpeg' => [
+                'available' => false,
+                'version' => null,
+                'path' => null,
+                'error' => null,
+            ],
+        ];
+
+        // Check FFmpeg
+        if ($status['exec_enabled']) {
+            try {
+                // Try different FFmpeg paths common on cPanel
+                $ffmpegPaths = [
+                    'ffmpeg',
+                    '/usr/bin/ffmpeg',
+                    '/usr/local/bin/ffmpeg',
+                    '/opt/cpanel/composer/bin/ffmpeg',
+                ];
+
+                foreach ($ffmpegPaths as $path) {
+                    exec("{$path} -version 2>&1", $output, $returnCode);
+                    if ($returnCode === 0) {
+                        $status['ffmpeg']['available'] = true;
+                        $status['ffmpeg']['path'] = $path;
+                        $status['ffmpeg']['version'] = $output[0] ?? 'unknown';
+                        break;
+                    }
+                    $output = []; // Reset for next iteration
+                }
+
+                if (!$status['ffmpeg']['available']) {
+                    $status['ffmpeg']['error'] = 'FFmpeg not found in any standard path';
+                }
+            } catch (\Exception $e) {
+                $status['ffmpeg']['error'] = $e->getMessage();
+            }
+        } else {
+            $status['ffmpeg']['error'] = 'exec() function is disabled';
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $status,
+        ]);
+    }
 }

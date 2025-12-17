@@ -228,6 +228,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('git/composer-install', [GitApiController::class, 'composerInstall']);
     Route::post('git/migrate', [GitApiController::class, 'migrate']);
     Route::post('git/migrate-fresh', [GitApiController::class, 'migrateFresh']);
+    Route::get('git/check-status', [GitApiController::class, 'checkStatus']);
 
     // Referral program routes
     Route::prefix('referrals')->group(function () {
