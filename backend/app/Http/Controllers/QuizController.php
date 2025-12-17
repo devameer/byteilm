@@ -29,12 +29,28 @@ class QuizController extends Controller
     {
         $lesson = Lesson::findOrFail($lessonId);
         $user = Auth::user();
+        $userId = $user->id;
 
+        // Optimized query with eager loading and counts
         $quizzes = Quiz::forLesson($lessonId)
             ->active()
-            ->with('questions')
+            ->withCount('questions')
+            ->with([
+                'attempts' => function ($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                        ->select('id', 'quiz_id', 'score', 'passed', 'completed_at')
+                        ->orderBy('score', 'desc');
+                }
+            ])
             ->get()
-            ->map(function ($quiz) use ($user) {
+            ->map(function ($quiz) use ($userId) {
+                $userAttempts = $quiz->attempts;
+                $attemptCount = $userAttempts->count();
+                $bestAttempt = $userAttempts->first();
+                $hasPassed = $userAttempts->where('passed', true)->isNotEmpty();
+                $remainingAttempts = $quiz->max_attempts ? max(0, $quiz->max_attempts - $attemptCount) : null;
+                $canTake = $quiz->max_attempts === null || $remainingAttempts > 0;
+
                 return [
                     'id' => $quiz->id,
                     'title' => $quiz->title,
@@ -43,13 +59,13 @@ class QuizController extends Controller
                     'passing_score' => $quiz->passing_score,
                     'max_attempts' => $quiz->max_attempts,
                     'difficulty' => $quiz->difficulty,
-                    'questions_count' => $quiz->questions()->count(),
+                    'questions_count' => $quiz->questions_count,
                     'total_points' => $quiz->total_points,
-                    'user_attempts' => $quiz->userAttempts($user->id)->count(),
-                    'remaining_attempts' => $quiz->getRemainingAttempts($user->id),
-                    'can_take' => $quiz->canUserTakeQuiz($user->id),
-                    'has_passed' => $quiz->hasUserPassed($user->id),
-                    'best_score' => $quiz->getBestAttempt($user->id)?->score,
+                    'user_attempts' => $attemptCount,
+                    'remaining_attempts' => $remainingAttempts,
+                    'can_take' => $canTake,
+                    'has_passed' => $hasPassed,
+                    'best_score' => $bestAttempt?->score,
                     'created_at' => $quiz->created_at
                 ];
             });
@@ -119,7 +135,8 @@ class QuizController extends Controller
             'passing_score' => 'integer|min:0|max:100',
             'max_attempts' => 'integer|min:1|max:10',
             'question_types' => 'array',
-            'question_types.*' => 'in:multiple_choice,true_false,fill_blank,short_answer'
+            'question_types.*' => 'in:multiple_choice,true_false,fill_blank,short_answer',
+            'language' => 'in:ar,en,fr,de,es,tr,ur'
         ]);
 
         $lesson = Lesson::findOrFail($lessonId);
@@ -135,6 +152,7 @@ class QuizController extends Controller
                 'passing_score' => $request->passing_score ?? 70,
                 'max_attempts' => $request->max_attempts ?? 3,
                 'question_types' => $request->question_types ?? ['multiple_choice', 'true_false'],
+                'language' => $request->language ?? 'ar',
                 'randomize' => $request->randomize ?? true,
                 'show_answers' => $request->show_answers ?? true,
                 'is_active' => $request->is_active ?? true

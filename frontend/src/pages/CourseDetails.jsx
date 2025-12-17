@@ -6,7 +6,7 @@ import lessonService from "../services/lessonService";
 import categoryService from "../services/categoryService";
 import taskService from "../services/taskService";
 import Modal from "../components/Modal";
-import CourseDetailsSkeleton from "../components/courses/CourseDetailsSkeleton";
+import CourseDetailsSkeleton from "../components/skeletons/CourseDetailsSkeleton";
 
 function CourseDetails() {
     const { darkMode } = useTheme();

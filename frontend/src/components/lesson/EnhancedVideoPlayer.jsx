@@ -96,6 +96,19 @@ export default function EnhancedVideoPlayer({ video, darkMode }) {
     };
   }, [isPlaying]);
 
+  // Preload video when component mounts
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement || !video) return;
+
+    // Trigger preload by loading the video source
+    const videoUrl = video.proxy_video_url || video.video_url;
+    if (videoUrl && videoElement.src !== videoUrl) {
+      videoElement.load(); // Force preloading
+      console.log('🎬 Video preload started:', videoUrl);
+    }
+  }, [video]);
+
   // Auto-select Arabic subtitle
   useEffect(() => {
     if (video.subtitles && video.subtitles.length > 0) {

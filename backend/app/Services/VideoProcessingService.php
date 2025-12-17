@@ -223,4 +223,166 @@ class VideoProcessingService
             'Accept-Ranges' => 'bytes',
         ]);
     }
+
+    /**
+     * Extract audio from video file using FFmpeg.
+     * Returns the path to the extracted audio file on the same storage disk.
+     */
+    public function extractAudio(string $videoPath, ?int $lessonId = null): ?array
+    {
+        $disk = config('filesystems.default');
+
+        try {
+            // For S3, we need to download the video first
+            if ($disk === 's3') {
+                return $this->extractAudioFromS3($videoPath, $lessonId);
+            }
+
+            // For local storage
+            return $this->extractAudioFromLocal($videoPath, $lessonId);
+        } catch (\Exception $e) {
+            \Log::error('Audio extraction failed', [
+                'video_path' => $videoPath,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Extract audio from S3 video.
+     */
+    private function extractAudioFromS3(string $videoPath, ?int $lessonId = null): ?array
+    {
+        // Generate temporary local paths
+        $tempVideoPath = storage_path('app/temp/' . Str::random(10) . '_video.mp4');
+        $tempAudioPath = storage_path('app/temp/' . Str::random(10) . '_audio.mp3');
+
+        // Ensure temp directory exists
+        if (!file_exists(storage_path('app/temp'))) {
+            mkdir(storage_path('app/temp'), 0755, true);
+        }
+
+        try {
+            // Download video from S3 to temp location
+            $videoContent = Storage::disk('s3')->get($videoPath);
+            file_put_contents($tempVideoPath, $videoContent);
+
+            // Extract audio using FFmpeg
+            $command = sprintf(
+                'ffmpeg -i %s -vn -acodec libmp3lame -ab 128k -ar 44100 -y %s 2>&1',
+                escapeshellarg($tempVideoPath),
+                escapeshellarg($tempAudioPath)
+            );
+
+            exec($command, $output, $returnCode);
+
+            if ($returnCode !== 0 || !file_exists($tempAudioPath)) {
+                \Log::error('FFmpeg audio extraction failed', [
+                    'command' => $command,
+                    'output' => implode("\n", $output),
+                    'return_code' => $returnCode
+                ]);
+                throw new \Exception('FFmpeg failed to extract audio');
+            }
+
+            // Upload audio to S3
+            $audioDirectory = $lessonId ? "audio/lessons/{$lessonId}" : 'audio/library';
+            $audioFileName = pathinfo($videoPath, PATHINFO_FILENAME) . '.mp3';
+            $audioPath = $audioDirectory . '/' . $audioFileName;
+
+            Storage::disk('s3')->put($audioPath, file_get_contents($tempAudioPath));
+            Storage::disk('s3')->setVisibility($audioPath, 'private');
+
+            // Get file size
+            $audioSize = filesize($tempAudioPath);
+
+            // Clean up temp files
+            @unlink($tempVideoPath);
+            @unlink($tempAudioPath);
+
+            return [
+                'audio_path' => $audioPath,
+                'audio_size' => $audioSize,
+                'mime_type' => 'audio/mpeg',
+            ];
+        } catch (\Exception $e) {
+            // Clean up temp files on error
+            @unlink($tempVideoPath);
+            @unlink($tempAudioPath);
+            throw $e;
+        }
+    }
+
+    /**
+     * Extract audio from local video file.
+     */
+    private function extractAudioFromLocal(string $videoPath, ?int $lessonId = null): ?array
+    {
+        $disk = config('filesystems.default');
+        $fullVideoPath = Storage::disk($disk)->path($videoPath);
+
+        if (!file_exists($fullVideoPath)) {
+            throw new \Exception('Video file not found');
+        }
+
+        // Generate audio path
+        $audioDirectory = $lessonId ? "audio/lessons/{$lessonId}" : 'audio/library';
+        $audioFileName = pathinfo($videoPath, PATHINFO_FILENAME) . '.mp3';
+        $audioPath = $audioDirectory . '/' . $audioFileName;
+        $fullAudioPath = Storage::disk($disk)->path($audioPath);
+
+        // Ensure directory exists
+        $audioDir = dirname($fullAudioPath);
+        if (!file_exists($audioDir)) {
+            mkdir($audioDir, 0755, true);
+        }
+
+        // Extract audio using FFmpeg
+        $command = sprintf(
+            'ffmpeg -i %s -vn -acodec libmp3lame -ab 128k -ar 44100 -y %s 2>&1',
+            escapeshellarg($fullVideoPath),
+            escapeshellarg($fullAudioPath)
+        );
+
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0 || !file_exists($fullAudioPath)) {
+            \Log::error('FFmpeg audio extraction failed', [
+                'command' => $command,
+                'output' => implode("\n", $output),
+                'return_code' => $returnCode
+            ]);
+            throw new \Exception('FFmpeg failed to extract audio');
+        }
+
+        return [
+            'audio_path' => $audioPath,
+            'audio_size' => filesize($fullAudioPath),
+            'mime_type' => 'audio/mpeg',
+        ];
+    }
+
+    /**
+     * Delete audio file.
+     */
+    public function deleteAudio(string $audioPath): bool
+    {
+        $disk = config('filesystems.default');
+
+        if (Storage::disk($disk)->exists($audioPath)) {
+            return Storage::disk($disk)->delete($audioPath);
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if FFmpeg is available on the system.
+     */
+    public function isFFmpegAvailable(): bool
+    {
+        exec('ffmpeg -version 2>&1', $output, $returnCode);
+        return $returnCode === 0;
+    }
 }

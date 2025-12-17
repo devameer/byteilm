@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import categoryService from '../services/categoryService';
 import Modal from '../components/Modal';
-import CategoriesPageSkeleton from '../components/categories/CategoriesPageSkeleton';
+import CategoriesPageSkeleton from '../components/skeletons/CategoriesPageSkeleton';
 
 function Categories() {
     const { darkMode } = useTheme();

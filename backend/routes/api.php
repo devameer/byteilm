@@ -191,6 +191,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/video/summarize', [LessonSubtitleApiController::class, 'summarize']);
     });
 
+    // Quiz Routes (AI-Powered Quiz System)
+    require __DIR__ . '/quizzes-routes.php';
+
     // Media Library Routes
     Route::prefix('media-library')->group(function () {
         Route::get('/videos', [MediaLibraryApiController::class, 'index']);
@@ -222,6 +225,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Git utility route
     Route::post('git/pull', [GitApiController::class, 'pull']);
+    Route::post('git/composer-install', [GitApiController::class, 'composerInstall']);
+    Route::post('git/migrate', [GitApiController::class, 'migrate']);
+    Route::post('git/migrate-fresh', [GitApiController::class, 'migrateFresh']);
 
     // Referral program routes
     Route::prefix('referrals')->group(function () {

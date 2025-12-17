@@ -4,7 +4,7 @@ import lessonService from "../services/lessonService";
 import courseService from "../services/courseService";
 import taskService from "../services/taskService";
 import Modal from "../components/Modal";
-import LessonsPageSkeleton from "../components/lessons/LessonsPageSkeleton";
+import LessonsPageSkeleton from "../components/skeletons/LessonsPageSkeleton";
 
 const LESSON_PLACEHOLDER_IMAGE =
     "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1000&q=80";
@@ -407,215 +407,209 @@ function Lessons() {
             {loading ? (
                 <LessonsPageSkeleton />
             ) : lessons.length === 0 ? (
-                <div className={`rounded-lg shadow-sm border p-12 text-center transition-colors duration-300 ${
-                    darkMode ? 'bg-gray-800 border-gray-700 text-gray-500' : 'bg-white border-gray-200 text-gray-500'
+                <div className={`rounded-2xl shadow-lg border-2 p-16 text-center transition-all duration-300 ${
+                    darkMode 
+                        ? 'bg-gray-800/50 border-gray-700/50 backdrop-blur-sm' 
+                        : 'bg-white/80 border-gray-100 backdrop-blur-sm'
                 }`}>
-                    لا توجد دروس ضمن هذا الفلتر.
+                    <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center ${
+                        darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                    }`}>
+                        <i className={`fas fa-book-open text-3xl ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}></i>
+                    </div>
+                    <p className={`text-lg font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        لا توجد دروس ضمن هذا الفلتر
+                    </p>
+                    <p className={`text-sm mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        جرب تغيير الفلتر أو إضافة درس جديد
+                    </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {lessons.map((lesson) => {
-                        const courseName =
-                            lesson.course?.name || "دورة غير محددة";
-                        const heroImage =
-                            lesson.course?.image_url ||
-                            LESSON_PLACEHOLDER_IMAGE;
+                        const courseName = lesson.course?.name || "دورة غير محددة";
+                        const heroImage = lesson.course?.image_url || LESSON_PLACEHOLDER_IMAGE;
                         return (
                             <div
                                 key={lesson.id}
-                                className={`group relative overflow-hidden rounded-2xl ring-1 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
-                                    darkMode ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-100'
+                                className={`group relative overflow-hidden rounded-3xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${
+                                    darkMode 
+                                        ? 'bg-gradient-to-br from-gray-800 via-gray-800 to-gray-900 shadow-xl shadow-gray-900/50 ring-1 ring-gray-700/50' 
+                                        : 'bg-white shadow-xl shadow-gray-200/50 ring-1 ring-gray-100'
                                 }`}
                             >
-                                <div className="relative aspect-[16/9] overflow-hidden">
+                                {/* Hero Image Section */}
+                                <div className="relative aspect-[16/10] overflow-hidden">
                                     <img
                                         src={heroImage}
                                         alt={courseName}
-                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                                         onError={handleImageError}
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
-                                    <div className="absolute inset-0 flex flex-col justify-between p-4 text-white">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <span
-                                                className={`rounded-full px-3 py-1 text-[11px] font-medium tracking-wide ${
-                                                    lesson.completed
-                                                        ? "bg-emerald-500 text-white shadow-sm"
-                                                        : "bg-amber-500 text-white shadow-sm"
-                                                }`}
-                                            >
-                                                {lesson.completed
-                                                    ? "مكتمل"
-                                                    : "قيد الإنجاز"}
-                                            </span>
-                                            {lesson.has_task ? (
-                                                <span className="flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-[11px] font-medium backdrop-blur">
-                                                    <i className="fas fa-calendar-check" />
-                                                    <span>مجدول</span>
-                                                </span>
-                                            ) : (
-                                                <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium backdrop-blur">
-                                                    {lesson.duration ||
-                                                        "مدة غير محددة"}
-                                                </span>
-                                            )}
+                                    {/* Gradient Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                                    
+                                    {/* Play Button Overlay */}
+                                    <a
+                                        href={`/lessons/${lesson.id}/media`}
+                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
+                                    >
+                                        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border-2 border-white/40 transition-transform duration-300 group-hover:scale-110">
+                                            <i className="fas fa-play text-white text-xl ml-1"></i>
                                         </div>
-                                        <div>
-                                            <h2 className="text-lg font-semibold leading-tight">
-                                                {lesson.name}
-                                            </h2>
-                                            <p className="mt-1 text-sm text-gray-200">
-                                                {courseName}
-                                            </p>
-                                        </div>
+                                    </a>
+                                    
+                                    {/* Top Badges */}
+                                    <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2 z-10">
+                                        <span
+                                            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold shadow-lg backdrop-blur-sm ${
+                                                lesson.completed
+                                                    ? "bg-emerald-500/90 text-white"
+                                                    : "bg-amber-500/90 text-white"
+                                            }`}
+                                        >
+                                            <i className={`fas ${lesson.completed ? 'fa-check-circle' : 'fa-hourglass-half'} text-[10px]`}></i>
+                                            {lesson.completed ? "مكتمل" : "قيد الإنجاز"}
+                                        </span>
+                                        
+                                        <span className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-md ${
+                                            lesson.has_task 
+                                                ? 'bg-blue-500/80 text-white' 
+                                                : 'bg-white/20 text-white'
+                                        }`}>
+                                            <i className={`fas ${lesson.has_task ? 'fa-calendar-check' : 'fa-clock'} text-[10px]`}></i>
+                                            {lesson.has_task ? "مجدول" : (lesson.duration || "مدة غير محددة")}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Bottom Title Section */}
+                                    <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                                        <h2 className="text-lg font-bold text-white leading-tight line-clamp-2 mb-1 drop-shadow-lg">
+                                            {lesson.name}
+                                        </h2>
+                                        <p className="text-sm text-gray-300 flex items-center gap-2">
+                                            <i className="fas fa-graduation-cap text-indigo-400"></i>
+                                            {courseName}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-5 p-6">
+                                {/* Content Section */}
+                                <div className="p-5 space-y-4">
+                                    {/* Description */}
                                     {lesson.description && (
-                                        <p className={`text-sm leading-relaxed transition-colors duration-300 ${
+                                        <p className={`text-sm leading-relaxed line-clamp-2 ${
                                             darkMode ? 'text-gray-400' : 'text-gray-600'
                                         }`}>
                                             {lesson.description}
                                         </p>
                                     )}
 
-                                    <div className={`grid grid-cols-2 gap-3 text-sm transition-colors duration-300 ${
-                                        darkMode ? 'text-gray-400' : 'text-gray-600'
+                                    {/* Quick Stats */}
+                                    <div className={`flex items-center gap-4 py-3 border-y ${
+                                        darkMode ? 'border-gray-700/50' : 'border-gray-100'
                                     }`}>
-                                        <div className={`col-span-2 rounded-xl px-4 py-3 transition-colors duration-300 ${
-                                            darkMode ? 'bg-gray-900/50' : 'bg-slate-50/90'
-                                        }`}>
-                                            <div className={`flex items-center gap-2 transition-colors duration-300 ${
-                                                darkMode ? 'text-gray-500' : 'text-gray-500'
+                                        <div className="flex items-center gap-2 flex-1">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                darkMode ? 'bg-indigo-500/20' : 'bg-indigo-50'
                                             }`}>
-                                                <i className="fas fa-book-open text-indigo-500" />
-                                                <span>الدورة</span>
+                                                <i className="fas fa-clock text-indigo-500 text-sm"></i>
                                             </div>
-                                            <div className={`mt-1 text-base font-semibold transition-colors duration-300 ${
-                                                darkMode ? 'text-gray-100' : 'text-gray-900'
-                                            }`}>
-                                                {courseName}
+                                            <div>
+                                                <p className={`text-[10px] uppercase tracking-wide ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>المدة</p>
+                                                <p className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                                    {lesson.duration || "غير محددة"}
+                                                </p>
                                             </div>
                                         </div>
                                         {lesson.type && (
-                                            <div className={`rounded-xl px-4 py-3 transition-colors duration-300 ${
-                                                darkMode ? 'bg-gray-900/50' : 'bg-slate-50/90'
-                                            }`}>
-                                                <div className={`flex items-center gap-2 transition-colors duration-300 ${
-                                                    darkMode ? 'text-gray-500' : 'text-gray-500'
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                    darkMode ? 'bg-purple-500/20' : 'bg-purple-50'
                                                 }`}>
-                                                    <i className="fas fa-layer-group text-indigo-500" />
-                                                    <span>نوع الدرس</span>
+                                                    <i className="fas fa-layer-group text-purple-500 text-sm"></i>
                                                 </div>
-                                                <div className={`mt-1 text-base font-semibold transition-colors duration-300 ${
-                                                    darkMode ? 'text-gray-100' : 'text-gray-900'
-                                                }`}>
-                                                    {lesson.type}
+                                                <div>
+                                                    <p className={`text-[10px] uppercase tracking-wide ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>النوع</p>
+                                                    <p className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                                        {lesson.type}
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
-                                        <div className={`rounded-xl px-4 py-3 transition-colors duration-300 ${
-                                            darkMode ? 'bg-gray-900/50' : 'bg-slate-50/90'
-                                        }`}>
-                                            <div className={`flex items-center gap-2 transition-colors duration-300 ${
-                                                darkMode ? 'text-gray-500' : 'text-gray-500'
-                                            }`}>
-                                                <i className="fas fa-clock text-indigo-500" />
-                                                <span>المدة</span>
-                                            </div>
-                                            <div className={`mt-1 text-base font-semibold transition-colors duration-300 ${
-                                                darkMode ? 'text-gray-100' : 'text-gray-900'
-                                            }`}>
-                                                {lesson.duration || "غير محددة"}
-                                            </div>
-                                        </div>
                                     </div>
 
-                                    <div className="flex flex-wrap gap-2 pt-2">
-                                        {!lesson.completed &&
-                                            (lesson.has_task ? (
-                                                <div className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-300 ${
+                                    {/* Primary Action - Watch Video Button */}
+                                    <a
+                                        href={`/lessons/${lesson.id}/media`}
+                                        className="group/btn flex items-center justify-center gap-3 w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 text-white font-semibold text-sm transition-all duration-300 hover:from-indigo-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-lg hover:shadow-indigo-500/30"
+                                    >
+                                        <i className="fas fa-play-circle transition-transform duration-300 group-hover/btn:scale-110"></i>
+                                        <span>مشاهدة الفيديو</span>
+                                        <i className="fas fa-arrow-left text-xs opacity-0 -translate-x-2 transition-all duration-300 group-hover/btn:opacity-100 group-hover/btn:translate-x-0"></i>
+                                    </a>
+
+                                    {/* Secondary Actions */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {!lesson.completed && !lesson.has_task && (
+                                            <button
+                                                onClick={() => handleOpenAddTask(lesson)}
+                                                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-300 ${
                                                     darkMode
-                                                        ? 'border-gray-700 bg-gray-900/50 text-gray-400'
-                                                        : 'border-slate-200 bg-slate-50 text-slate-600'
-                                                }`}>
-                                                    <i className="fas fa-calendar-check text-xs" />
-                                                    <span>مجدول</span>
-                                                </div>
-                                            ) : (
-                                                <button
-                                                    onClick={() =>
-                                                        handleOpenAddTask(
-                                                            lesson
-                                                        )
-                                                    }
-                                                    className="flex-1 min-w-[140px] rounded-lg border border-transparent bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
-                                                    title="إضافة الدرس إلى قائمة المهام"
-                                                >
-                                                    <span className="flex items-center justify-center gap-2">
-                                                        <i className="fas fa-calendar-plus text-xs" />
-                                                        <span>
-                                                            إضافة للمهام
-                                                        </span>
-                                                    </span>
-                                                </button>
-                                            ))}
+                                                        ? 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 border border-gray-600/50'
+                                                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                                                }`}
+                                                title="إضافة الدرس إلى قائمة المهام"
+                                            >
+                                                <i className="fas fa-calendar-plus text-indigo-500"></i>
+                                                <span>جدولة</span>
+                                            </button>
+                                        )}
+                                        
+                                        {lesson.has_task && !lesson.completed && (
+                                            <div className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium ${
+                                                darkMode
+                                                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                                                    : 'bg-blue-50 text-blue-600 border border-blue-200'
+                                            }`}>
+                                                <i className="fas fa-calendar-check"></i>
+                                                <span>مجدول</span>
+                                            </div>
+                                        )}
 
                                         <button
-                                            onClick={() =>
-                                                handleToggleCompletion(
-                                                    lesson.id
-                                                )
-                                            }
-                                            className={`flex-1 min-w-[140px] rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                                            onClick={() => handleToggleCompletion(lesson.id)}
+                                            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-300 ${
                                                 lesson.completed
                                                     ? darkMode
-                                                        ? "border border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700"
-                                                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                                                    : "bg-emerald-500 text-white hover:bg-emerald-600"
-                                            }`}
-                                            title={
-                                                lesson.completed
-                                                    ? "إلغاء اكتمال الدرس"
-                                                    : "وضع مكتمل"
-                                            }
+                                                        ? 'bg-gray-700/50 text-gray-300 hover:bg-gray-700 border border-gray-600/50'
+                                                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                                                    : 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-500/30'
+                                            } ${(!lesson.completed && !lesson.has_task) ? '' : 'col-span-2'}`}
+                                            title={lesson.completed ? "إلغاء اكتمال الدرس" : "وضع مكتمل"}
                                         >
-                                            <span className="flex items-center justify-center gap-2">
-                                                <i
-                                                    className={`fas ${
-                                                        lesson.completed
-                                                            ? "fa-undo"
-                                                            : "fa-check-circle"
-                                                    } text-xs`}
-                                                />
-                                                <span>
-                                                    {lesson.completed
-                                                        ? "إرجاع قيد الإنجاز"
-                                                        : "وضع مكتمل"}
-                                                </span>
-                                            </span>
+                                            <i className={`fas ${lesson.completed ? 'fa-undo' : 'fa-check-circle'}`}></i>
+                                            <span>{lesson.completed ? "إرجاع قيد الإنجاز" : "وضع مكتمل"}</span>
                                         </button>
-
-                                        {lesson.link && (
-                                            <a
-                                                href={lesson.link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={`flex-1 min-w-[140px] rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-300 ${
-                                                    darkMode
-                                                        ? 'border-gray-700 text-gray-300 hover:bg-gray-700'
-                                                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                                                }`}
-                                                title="فتح الدرس في تبويب جديد"
-                                            >
-                                                <span className="flex items-center justify-center gap-2">
-                                                    <i className="fas fa-play-circle text-xs text-indigo-500" />
-                                                    <span>فتح الدرس</span>
-                                                </span>
-                                            </a>
-                                        )}
                                     </div>
+
+                                    {/* External Link (if available) */}
+                                    {lesson.link && (
+                                        <a
+                                            href={lesson.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-300 ${
+                                                darkMode
+                                                    ? 'text-gray-400 hover:text-indigo-400 hover:bg-gray-700/50'
+                                                    : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-50'
+                                            }`}
+                                            title="فتح الدرس في تبويب جديد"
+                                        >
+                                            <i className="fas fa-external-link-alt"></i>
+                                            <span>فتح الرابط الخارجي</span>
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         );

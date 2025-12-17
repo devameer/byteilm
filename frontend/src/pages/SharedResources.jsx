@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import api from '../services/api';
-import LoadingSpinner from '../components/LoadingSpinner';
+import SharedResourcesPageSkeleton from '../components/skeletons/SharedResourcesPageSkeleton';
 
 export default function SharedResources() {
   const { darkMode } = useTheme();
@@ -92,11 +92,7 @@ export default function SharedResources() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <SharedResourcesPageSkeleton />
-      </div>
-    );
+    return <SharedResourcesPageSkeleton />;
   }
 
   if (error) {

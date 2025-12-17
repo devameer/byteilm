@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
 import projectService from "../services/projectService";
 import Modal from "../components/Modal";
-import ProjectsPageSkeleton from "../components/projects/ProjectsPageSkeleton";
+import ProjectsPageSkeleton from "../components/skeletons/ProjectsPageSkeleton";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "جميع الحالات", icon: "fa-layer-group" },

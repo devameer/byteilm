@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import mediaLibraryService from "../services/mediaLibraryService";
 import lessonService from "../services/lessonService";
-import LessonMediaSkeleton from "../components/lesson/LessonMediaSkeleton";
+import LessonMediaSkeleton from "../components/skeletons/LessonMediaSkeleton";
 import Pagination from "../components/ui/Pagination";
 import ChunkedVideoUploader from "../components/lesson/ChunkedVideoUploader";
 import Button from "../components/Button";

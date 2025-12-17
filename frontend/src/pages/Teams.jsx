@@ -2,9 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import Alert from '../components/Alert.jsx';
 import Button from '../components/Button.jsx';
-import LoadingSpinner from '../components/LoadingSpinner.jsx';
-import TeamsPageSkeleton from '../components/teams/TeamsPageSkeleton.jsx';
-import TeamDetailSkeleton from '../components/teams/TeamDetailSkeleton.jsx';
+import TeamsPageSkeleton from '../components/skeletons/TeamsPageSkeleton.jsx';
+import TeamDetailSkeleton from '../components/skeletons/TeamDetailSkeleton.jsx';
 import TeamInvitations from '../components/teams/TeamInvitations.jsx';
 import TeamActivityLog from '../components/teams/TeamActivityLog.jsx';
 import TeamTasks from '../components/teams/TeamTasks.jsx';
@@ -426,21 +425,21 @@ function Teams() {
     }, [teams, searchTerm]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 p-6" dir="rtl">
+        <div className={`min-h-screen p-6 transition-colors duration-300 ${darkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30'}`} dir="rtl">
             <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-black text-gray-900 mb-2">إدارة الفرق</h1>
-                        <p className="text-gray-600">تعاون مع فريقك وشارك الموارد</p>
+                        <h1 className={`text-4xl font-black mb-2 ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>إدارة الفرق</h1>
+                        <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>تعاون مع فريقك وشارك الموارد</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white rounded-xl shadow-sm border-2 border-gray-100 p-6 hover:shadow-lg transition-shadow">
+                    <div className={`rounded-xl shadow-sm border-2 p-6 hover:shadow-lg transition-shadow ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600 mb-1">إجمالي الفرق</p>
-                                <p className="text-3xl font-black text-gray-900">{statistics.total}</p>
+                                <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>إجمالي الفرق</p>
+                                <p className={`text-3xl font-black ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{statistics.total}</p>
                             </div>
                             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                                 <i className="fas fa-users text-white text-2xl"></i>
@@ -448,11 +447,11 @@ function Teams() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border-2 border-gray-100 p-6 hover:shadow-lg transition-shadow">
+                    <div className={`rounded-xl shadow-sm border-2 p-6 hover:shadow-lg transition-shadow ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600 mb-1">الفرق التي أملكها</p>
-                                <p className="text-3xl font-black text-gray-900">{statistics.ownedTeams}</p>
+                                <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>الفرق التي أملكها</p>
+                                <p className={`text-3xl font-black ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{statistics.ownedTeams}</p>
                             </div>
                             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
                                 <i className="fas fa-crown text-white text-2xl"></i>
@@ -460,11 +459,11 @@ function Teams() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border-2 border-gray-100 p-6 hover:shadow-lg transition-shadow">
+                    <div className={`rounded-xl shadow-sm border-2 p-6 hover:shadow-lg transition-shadow ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600 mb-1">فرق أنا عضو فيها</p>
-                                <p className="text-3xl font-black text-gray-900">{statistics.memberTeams}</p>
+                                <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>فرق أنا عضو فيها</p>
+                                <p className={`text-3xl font-black ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{statistics.memberTeams}</p>
                             </div>
                             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
                                 <i className="fas fa-user-friends text-white text-2xl"></i>
@@ -472,11 +471,11 @@ function Teams() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border-2 border-gray-100 p-6 hover:shadow-lg transition-shadow">
+                    <div className={`rounded-xl shadow-sm border-2 p-6 hover:shadow-lg transition-shadow ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600 mb-1">إجمالي الأعضاء</p>
-                                <p className="text-3xl font-black text-gray-900">{statistics.totalMembers}</p>
+                                <p className={`text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>إجمالي الأعضاء</p>
+                                <p className={`text-3xl font-black ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{statistics.totalMembers}</p>
                             </div>
                             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
                                 <i className="fas fa-user-plus text-white text-2xl"></i>
@@ -487,7 +486,7 @@ function Teams() {
 
                 <div className="flex flex-col gap-4">
                     {status && (
-                        <div className="bg-emerald-50 border-2 border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm font-semibold">
+                        <div className={`border-2 rounded-xl px-4 py-3 text-sm font-semibold ${darkMode ? 'bg-emerald-900/30 border-emerald-700 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
                             <i className="fas fa-check-circle ml-2"></i>
                             {status}
                         </div>
@@ -502,24 +501,24 @@ function Teams() {
                 ) : (
                     <div className="grid gap-6 lg:grid-cols-3">
                         <div className="space-y-6 lg:col-span-1">
-                            <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
+                            <div className={`rounded-2xl p-6 border-2 shadow-lg ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-slate-200'}`}>
                                 <div className="flex items-center mb-4">
                                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center ml-3">
                                         <i className="fas fa-plus text-white"></i>
                                     </div>
-                                    <h2 className="text-xl font-black text-slate-800">إنشاء فريق جديد</h2>
+                                    <h2 className={`text-xl font-black ${darkMode ? 'text-gray-100' : 'text-slate-800'}`}>إنشاء فريق جديد</h2>
                                 </div>
                                 <form onSubmit={handleCreateTeam} className="space-y-4">
                                     <div className="space-y-2">
-                                        <label htmlFor="new-team-name" className="text-sm font-bold text-slate-700 flex items-center">
-                                            <i className="fas fa-tag ml-2 text-slate-400"></i>
+                                        <label htmlFor="new-team-name" className={`text-sm font-bold flex items-center ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>
+                                            <i className={`fas fa-tag ml-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}></i>
                                             اسم الفريق
                                         </label>
                                         <input
                                             id="new-team-name"
                                             type="text"
                                             required
-                                            className="form-input w-full border-2 border-slate-200 rounded-lg px-4 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                                            className={`form-input w-full border-2 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-200 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-100 focus:border-indigo-500' : 'border-slate-200 focus:border-indigo-500'}`}
                                             value={createForm.name}
                                             onChange={(event) =>
                                                 setCreateForm((prev) => ({ ...prev, name: event.target.value }))
@@ -527,14 +526,14 @@ function Teams() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="new-team-description" className="text-sm font-bold text-slate-700 flex items-center">
-                                            <i className="fas fa-align-right ml-2 text-slate-400"></i>
+                                        <label htmlFor="new-team-description" className={`text-sm font-bold flex items-center ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>
+                                            <i className={`fas fa-align-right ml-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}></i>
                                             وصف مختصر (اختياري)
                                         </label>
                                         <textarea
                                             id="new-team-description"
                                             rows={3}
-                                            className="form-textarea w-full border-2 border-slate-200 rounded-lg px-4 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                                            className={`form-textarea w-full border-2 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-200 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-100 focus:border-indigo-500' : 'border-slate-200 focus:border-indigo-500'}`}
                                             value={createForm.description}
                                             onChange={(event) =>
                                                 setCreateForm((prev) => ({ ...prev, description: event.target.value }))
@@ -547,7 +546,7 @@ function Teams() {
                                 </form>
                             </div>
 
-                            <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden">
+                            <div className={`rounded-2xl border-2 shadow-lg overflow-hidden ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-slate-200'}`}>
                                 <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-4 flex items-center justify-between">
                                     <h2 className="text-lg font-black text-white flex items-center">
                                         <i className="fas fa-list ml-2"></i>
@@ -558,22 +557,22 @@ function Teams() {
                                     </span>
                                 </div>
                                 
-                                <div className="p-4 border-b border-slate-200">
+                                <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-slate-200'}`}>
                                     <div className="relative">
-                                        <i className="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                                        <i className={`fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}></i>
                                         <input
                                             type="text"
                                             placeholder="ابحث عن فريق..."
-                                            className="w-full pr-10 pl-4 py-2 border-2 border-slate-200 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                                            className={`w-full pr-10 pl-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-indigo-200 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500 focus:border-indigo-500' : 'border-slate-200 focus:border-indigo-500'}`}
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+                                <div className={`divide-y max-h-96 overflow-y-auto ${darkMode ? 'divide-gray-700' : 'divide-slate-100'}`}>
                                     {filteredTeams.length === 0 && (
-                                        <p className="p-4 text-sm text-slate-500 text-center">
+                                        <p className={`p-4 text-sm text-center ${darkMode ? 'text-gray-500' : 'text-slate-500'}`}>
                                             {searchTerm ? 'لا توجد نتائج للبحث' : 'لا توجد فرق حتى الآن.'}
                                         </p>
                                     )}
@@ -582,8 +581,8 @@ function Teams() {
                                             key={team.id}
                                             className={`p-4 transition ${
                                                 selectedTeamId === team.id
-                                                    ? 'bg-gradient-to-r from-indigo-50 to-blue-50 border-r-4 border-indigo-500'
-                                                    : 'hover:bg-slate-50'
+                                                    ? darkMode ? 'bg-gradient-to-r from-indigo-900/50 to-blue-900/50 border-r-4 border-indigo-500' : 'bg-gradient-to-r from-indigo-50 to-blue-50 border-r-4 border-indigo-500'
+                                                    : darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-slate-50'
                                             }`}
                                         >
                                             <div className="flex items-center justify-between gap-3">
@@ -596,7 +595,7 @@ function Teams() {
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2">
                                                                 <span className={`font-bold ${
-                                                                    selectedTeamId === team.id ? 'text-indigo-700' : 'text-slate-700'
+                                                                    selectedTeamId === team.id ? 'text-indigo-500' : darkMode ? 'text-gray-200' : 'text-slate-700'
                                                                 }`}>
                                                                     {team.name}
                                                                 </span>
@@ -605,17 +604,17 @@ function Teams() {
                                                                 )}
                                                             </div>
                                                             {team.description && (
-                                                                <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                                                                <p className={`text-xs mt-1 line-clamp-1 ${darkMode ? 'text-gray-500' : 'text-slate-500'}`}>
                                                                     {team.description}
                                                                 </p>
                                                             )}
                                                             <div className="flex items-center gap-3 mt-2">
-                                                                <span className="text-xs text-slate-500 flex items-center">
-                                                                    <i className="fas fa-users ml-1 text-slate-400"></i>
+                                                                <span className={`text-xs flex items-center ${darkMode ? 'text-gray-500' : 'text-slate-500'}`}>
+                                                                    <i className={`fas fa-users ml-1 ${darkMode ? 'text-gray-600' : 'text-slate-400'}`}></i>
                                                                     {team.members?.length ?? 0} عضو
                                                                 </span>
                                                                 {team.current_role && (
-                                                                    <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-slate-100 text-slate-600'}`}>
                                                                         {roleLabels[team.current_role] ?? team.current_role}
                                                                     </span>
                                                                 )}
@@ -625,7 +624,7 @@ function Teams() {
                                                 </button>
                                                 <button
                                                     onClick={() => setQuickViewTeam(team)}
-                                                    className="px-3 py-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-all hover:shadow-md border-2 border-transparent hover:border-indigo-200"
+                                                    className={`px-3 py-2 rounded-lg transition-all border-2 border-transparent ${darkMode ? 'text-indigo-400 hover:bg-indigo-900/30 hover:border-indigo-700' : 'text-indigo-600 hover:bg-indigo-100 hover:border-indigo-200 hover:shadow-md'}`}
                                                     title="عرض سريع"
                                                 >
                                                     <i className="fas fa-eye text-lg"></i>
@@ -642,18 +641,18 @@ function Teams() {
                                 selectedTeamId ? (
                                     <TeamDetailSkeleton />
                                 ) : (
-                                    <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
+                                    <div className={`rounded-2xl p-6 border-2 shadow-lg ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-slate-200'}`}>
                                         <div className="text-center py-12">
-                                            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                                                <i className="fas fa-users text-slate-400 text-3xl"></i>
+                                            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${darkMode ? 'bg-gray-700' : 'bg-slate-100'}`}>
+                                                <i className={`fas fa-users text-3xl ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}></i>
                                             </div>
-                                            <p className="text-slate-500 font-semibold">اختر فريقاً من القائمة أو أنشئ فريقاً جديداً</p>
+                                            <p className={`font-semibold ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>اختر فريقاً من القائمة أو أنشئ فريقاً جديداً</p>
                                         </div>
                                     </div>
                                 )
                             ) : (
                                 <div className="space-y-6">
-                                    <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg space-y-6">
+                                    <div className={`rounded-2xl p-6 border-2 shadow-lg space-y-6 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-slate-200'}`}>
                                         <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 -m-6 mb-6 p-6 rounded-t-2xl">
                                             <div className="flex items-center justify-between flex-wrap gap-3">
                                                 <div className="flex items-center gap-4">
@@ -686,14 +685,14 @@ function Teams() {
                                             <form onSubmit={handleUpdateTeam} className="space-y-4">
                                                 <div className="grid gap-4 md:grid-cols-2">
                                                     <div className="space-y-2">
-                                                        <label className="text-sm font-bold text-slate-700 flex items-center">
-                                                            <i className="fas fa-tag ml-2 text-slate-400"></i>
+                                                        <label className={`text-sm font-bold flex items-center ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>
+                                                            <i className={`fas fa-tag ml-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}></i>
                                                             اسم الفريق
                                                         </label>
                                                         <input
                                                             type="text"
                                                             required
-                                                            className="form-input w-full border-2 border-slate-200 rounded-lg px-4 py-2"
+                                                            className={`form-input w-full border-2 rounded-lg px-4 py-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-100' : 'border-slate-200'}`}
                                                             value={teamForm.name}
                                                             onChange={(event) =>
                                                                 setTeamForm((prev) => ({ ...prev, name: event.target.value }))
@@ -701,13 +700,13 @@ function Teams() {
                                                         />
                                                     </div>
                                                     <div className="space-y-2 md:col-span-2">
-                                                        <label className="text-sm font-bold text-slate-700 flex items-center">
-                                                            <i className="fas fa-align-right ml-2 text-slate-400"></i>
+                                                        <label className={`text-sm font-bold flex items-center ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>
+                                                            <i className={`fas fa-align-right ml-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}></i>
                                                             وصف الفريق
                                                         </label>
                                                         <textarea
                                                             rows={3}
-                                                            className="form-textarea w-full border-2 border-slate-200 rounded-lg px-4 py-2"
+                                                            className={`form-textarea w-full border-2 rounded-lg px-4 py-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-100' : 'border-slate-200'}`}
                                                             value={teamForm.description}
                                                             onChange={(event) =>
                                                                 setTeamForm((prev) => ({ ...prev, description: event.target.value }))
@@ -722,8 +721,8 @@ function Teams() {
                                                 </div>
                                             </form>
                                         ) : (
-                                            <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
-                                                <p className="text-slate-700">
+                                            <div className={`rounded-xl p-4 border-2 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-slate-50 border-slate-200'}`}>
+                                                <p className={darkMode ? 'text-gray-300' : 'text-slate-700'}>
                                                     {selectedTeam.description || 'لا يوجد وصف لهذا الفريق.'}
                                                 </p>
                                             </div>
@@ -766,27 +765,27 @@ function Teams() {
                                         </div>
                                     </div>
 
-                                    <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg space-y-4">
+                                    <div className={`rounded-2xl p-6 border-2 shadow-lg space-y-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-slate-200'}`}>
                                         <div className="flex items-center justify-between">
-                                            <h3 className="text-xl font-black text-slate-800 flex items-center">
+                                            <h3 className={`text-xl font-black flex items-center ${darkMode ? 'text-gray-100' : 'text-slate-800'}`}>
                                                 <i className="fas fa-user-friends ml-2 text-indigo-500"></i>
                                                 أعضاء الفريق
                                             </h3>
                                             {selectedTeam.permissions?.manage_members && (
-                                                <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                                <span className={`text-xs px-3 py-1 rounded-full ${darkMode ? 'bg-gray-700 text-gray-400' : 'bg-slate-100 text-slate-500'}`}>
                                                     يمكنك إضافة أعضاء أو تعديل أدوارهم
                                                 </span>
                                             )}
                                         </div>
 
                                         {selectedTeam.permissions?.manage_members && (
-                                            <form onSubmit={handleAddMember} className="bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-xl p-4 border-2 border-slate-200">
+                                            <form onSubmit={handleAddMember} className={`rounded-xl p-4 border-2 ${darkMode ? 'bg-gradient-to-r from-gray-700 to-gray-700/50 border-gray-600' : 'bg-gradient-to-r from-slate-50 to-blue-50/30 border-slate-200'}`}>
                                                 <div className="grid gap-4 md:grid-cols-3">
                                                     <div className="md:col-span-2">
                                                         <input
                                                             type="email"
                                                             required
-                                                            className="form-input w-full border-2 border-slate-200 rounded-lg px-4 py-2"
+                                                            className={`form-input w-full border-2 rounded-lg px-4 py-2 ${darkMode ? 'bg-gray-600 border-gray-500 text-gray-100 placeholder-gray-400' : 'border-slate-200'}`}
                                                             placeholder="member@example.com"
                                                             value={memberForm.email}
                                                             onChange={(event) =>
@@ -796,7 +795,7 @@ function Teams() {
                                                     </div>
                                                     <div>
                                                         <select
-                                                            className="form-select w-full border-2 border-slate-200 rounded-lg px-4 py-2"
+                                                            className={`form-select w-full border-2 rounded-lg px-4 py-2 ${darkMode ? 'bg-gray-600 border-gray-500 text-gray-100' : 'border-slate-200'}`}
                                                             value={memberForm.role}
                                                             onChange={(event) =>
                                                                 setMemberForm((prev) => ({ ...prev, role: event.target.value }))
@@ -819,35 +818,35 @@ function Teams() {
                                         )}
 
                                         <div className="overflow-x-auto">
-                                            <table className="min-w-full divide-y-2 divide-slate-200 text-sm">
-                                                <thead className="bg-gradient-to-r from-slate-100 to-blue-100/30 text-slate-700">
+                                            <table className={`min-w-full divide-y-2 text-sm ${darkMode ? 'divide-gray-700' : 'divide-slate-200'}`}>
+                                                <thead className={darkMode ? 'bg-gradient-to-r from-gray-700 to-gray-700/50 text-gray-200' : 'bg-gradient-to-r from-slate-100 to-blue-100/30 text-slate-700'}>
                                                     <tr>
                                                         <th className="px-4 py-3 text-right font-black">العضو</th>
                                                         <th className="px-4 py-3 text-right font-black">الدور</th>
                                                         <th className="px-4 py-3 text-right font-black">التحكم</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
+                                                <tbody className={darkMode ? 'divide-y divide-gray-700' : 'divide-y divide-slate-100'}>
                                                     {activeTeamMembers.map((member) => (
-                                                        <tr key={member.id} className="hover:bg-slate-50 transition-colors">
+                                                        <tr key={member.id} className={darkMode ? 'hover:bg-gray-700/50 transition-colors' : 'hover:bg-slate-50 transition-colors'}>
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-bold">
                                                                         {member.user?.name?.charAt(0) || 'U'}
                                                                     </div>
                                                                     <div>
-                                                                        <div className="font-bold text-slate-800 flex items-center gap-2">
+                                                                        <div className={`font-bold flex items-center gap-2 ${darkMode ? 'text-gray-100' : 'text-slate-800'}`}>
                                                                             {member.user?.name}
                                                                             {member.is_owner && (
                                                                                 <i className="fas fa-crown text-yellow-500 text-xs"></i>
                                                                             )}
                                                                         </div>
-                                                                        <div className="text-xs text-slate-500">{member.user?.email}</div>
+                                                                        <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-slate-500'}`}>{member.user?.email}</div>
                                                                     </div>
                                                                 </div>
                                                             </td>
                                                             <td className="px-4 py-3">
-                                                                <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">
+                                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-slate-100 text-slate-700'}`}>
                                                                     {roleLabels[member.role] ?? member.role}
                                                                 </span>
                                                             </td>
@@ -855,7 +854,7 @@ function Teams() {
                                                                 {selectedTeam.permissions?.manage_members ? (
                                                                     <div className="flex items-center gap-2">
                                                                         <select
-                                                                            className="form-select text-xs border-2 border-slate-200 rounded-lg px-3 py-1"
+                                                                            className={`form-select text-xs border-2 rounded-lg px-3 py-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-100' : 'border-slate-200'}`}
                                                                             value={member.role}
                                                                             onChange={(event) =>
                                                                                 handleUpdateMemberRole(member.id, event.target.value)
@@ -880,7 +879,7 @@ function Teams() {
                                                                         </Button>
                                                                     </div>
                                                                 ) : (
-                                                                    <span className="text-xs text-slate-400">—</span>
+                                                                    <span className={`text-xs ${darkMode ? 'text-gray-600' : 'text-slate-400'}`}>—</span>
                                                                 )}
                                                             </td>
                                                         </tr>
@@ -891,14 +890,14 @@ function Teams() {
                                     </div>
 
                                     {selectedTeam.permissions?.manage_resources && (
-                                        <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg space-y-4">
+                                        <div className={`rounded-2xl p-6 border-2 shadow-lg space-y-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-slate-200'}`}>
                                             <div className="flex items-center justify-between">
-                                                <h3 className="text-xl font-black text-slate-800 flex items-center">
+                                                <h3 className={`text-xl font-black flex items-center ${darkMode ? 'text-gray-100' : 'text-slate-800'}`}>
                                                     <i className="fas fa-share-alt ml-2 text-indigo-500"></i>
                                                     الموارد المشتركة
                                                 </h3>
                                                 {resourcesLoading && (
-                                                    <span className="text-xs text-slate-400 flex items-center gap-2">
+                                                    <span className={`text-xs flex items-center gap-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>
                                                         <i className="fas fa-spinner fa-spin"></i>
                                                         جاري تحديث القائمة...
                                                     </span>
@@ -1049,7 +1048,7 @@ function Teams() {
 
             {quickViewTeam && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setQuickViewTeam(null)}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className={`rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${darkMode ? 'bg-gray-800' : 'bg-white'}`} onClick={(e) => e.stopPropagation()}>
                         <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-6 rounded-t-2xl">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
@@ -1072,61 +1071,61 @@ function Teams() {
 
                         <div className="p-6 space-y-6">
                             <div>
-                                <h4 className="text-sm font-black text-slate-600 mb-2 flex items-center">
-                                    <i className="fas fa-align-right ml-2 text-slate-400"></i>
+                                <h4 className={`text-sm font-black mb-2 flex items-center ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+                                    <i className={`fas fa-align-right ml-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}></i>
                                     الوصف
                                 </h4>
-                                <p className="text-slate-700 bg-slate-50 p-4 rounded-lg border-2 border-slate-200">
+                                <p className={`p-4 rounded-lg border-2 ${darkMode ? 'text-gray-300 bg-gray-700 border-gray-600' : 'text-slate-700 bg-slate-50 border-slate-200'}`}>
                                     {quickViewTeam.description || 'لا يوجد وصف لهذا الفريق.'}
                                 </p>
                             </div>
 
                             <div>
-                                <h4 className="text-sm font-black text-slate-600 mb-2 flex items-center">
+                                <h4 className={`text-sm font-black mb-2 flex items-center ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                                     <i className="fas fa-crown ml-2 text-yellow-500"></i>
                                     المالك
                                 </h4>
-                                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-lg border-2 border-slate-200">
+                                <div className={`flex items-center gap-3 p-4 rounded-lg border-2 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-slate-50 border-slate-200'}`}>
                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
                                         {quickViewTeam.owner?.name?.charAt(0) || 'U'}
                                     </div>
                                     <div>
-                                        <p className="font-bold text-slate-800">{quickViewTeam.owner?.name}</p>
-                                        <p className="text-xs text-slate-500">{quickViewTeam.owner?.email}</p>
+                                        <p className={`font-bold ${darkMode ? 'text-gray-100' : 'text-slate-800'}`}>{quickViewTeam.owner?.name}</p>
+                                        <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-slate-500'}`}>{quickViewTeam.owner?.email}</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <h4 className="text-sm font-black text-slate-600 mb-3 flex items-center">
+                                <h4 className={`text-sm font-black mb-3 flex items-center ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
                                     <i className="fas fa-chart-bar ml-2 text-indigo-500"></i>
                                     الإحصائيات
                                 </h4>
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 rounded-xl border-2 border-blue-200 text-center">
+                                    <div className={`p-4 rounded-xl border-2 text-center ${darkMode ? 'bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-700' : 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200'}`}>
                                         <i className="fas fa-users text-blue-500 text-2xl mb-2"></i>
-                                        <p className="text-2xl font-black text-blue-900">{quickViewTeam.members?.length || 0}</p>
-                                        <p className="text-xs text-blue-600 font-bold">أعضاء</p>
+                                        <p className={`text-2xl font-black ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>{quickViewTeam.members?.length || 0}</p>
+                                        <p className={`text-xs font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>أعضاء</p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-green-50 to-green-100/50 p-4 rounded-xl border-2 border-green-200 text-center">
+                                    <div className={`p-4 rounded-xl border-2 text-center ${darkMode ? 'bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-700' : 'bg-gradient-to-br from-green-50 to-green-100/50 border-green-200'}`}>
                                         <i className="fas fa-book text-green-500 text-2xl mb-2"></i>
-                                        <p className="text-2xl font-black text-green-900">{quickViewTeam.courses?.length || 0}</p>
-                                        <p className="text-xs text-green-600 font-bold">دورات</p>
+                                        <p className={`text-2xl font-black ${darkMode ? 'text-green-300' : 'text-green-900'}`}>{quickViewTeam.courses?.length || 0}</p>
+                                        <p className={`text-xs font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>دورات</p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 rounded-xl border-2 border-purple-200 text-center">
+                                    <div className={`p-4 rounded-xl border-2 text-center ${darkMode ? 'bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-700' : 'bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200'}`}>
                                         <i className="fas fa-folder text-purple-500 text-2xl mb-2"></i>
-                                        <p className="text-2xl font-black text-purple-900">{quickViewTeam.projects?.length || 0}</p>
-                                        <p className="text-xs text-purple-600 font-bold">مشاريع</p>
+                                        <p className={`text-2xl font-black ${darkMode ? 'text-purple-300' : 'text-purple-900'}`}>{quickViewTeam.projects?.length || 0}</p>
+                                        <p className={`text-xs font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>مشاريع</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <h4 className="text-sm font-black text-slate-600 mb-2 flex items-center">
-                                    <i className="fas fa-user-tag ml-2 text-slate-400"></i>
+                                <h4 className={`text-sm font-black mb-2 flex items-center ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+                                    <i className={`fas fa-user-tag ml-2 ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}></i>
                                     دورك في الفريق
                                 </h4>
-                                <div className="bg-indigo-50 border-2 border-indigo-200 p-4 rounded-lg">
+                                <div className={`border-2 p-4 rounded-lg ${darkMode ? 'bg-indigo-900/30 border-indigo-700' : 'bg-indigo-50 border-indigo-200'}`}>
                                     <span className="px-4 py-2 bg-indigo-600 text-white rounded-full text-sm font-bold inline-flex items-center gap-2">
                                         {quickViewTeam.current_role === 'owner' && <i className="fas fa-crown"></i>}
                                         {roleLabels[quickViewTeam.current_role] || quickViewTeam.current_role}
@@ -1147,7 +1146,7 @@ function Teams() {
                                 </button>
                                 <button
                                     onClick={() => setQuickViewTeam(null)}
-                                    className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-400 transition-all hover:shadow-md"
+                                    className={`px-6 py-3 border-2 rounded-xl font-bold transition-all hover:shadow-md ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500' : 'border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400'}`}
                                 >
                                     إغلاق
                                 </button>

@@ -23,7 +23,8 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
     duration: 15,
     passing_score: 70,
     max_attempts: 3,
-    question_types: ['multiple_choice', 'true_false']
+    question_types: ['multiple_choice', 'true_false'],
+    language: 'ar'
   });
 
   useEffect(() => {
@@ -37,7 +38,8 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
       setLoading(true);
       const response = await fetch(`/api/lessons/${lessonId}/quizzes`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       });
 
@@ -58,8 +60,9 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
       const response = await fetch(`/api/lessons/${lessonId}/quizzes/generate`, {
         method: 'POST',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
         body: JSON.stringify(generateOptions)
       });
@@ -89,7 +92,8 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
       const response = await fetch(`/api/quizzes/${quizId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       });
 
@@ -322,6 +326,29 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
                   <option value="easy">سهل</option>
                   <option value="medium">متوسط</option>
                   <option value="hard">صعب</option>
+                </select>
+              </div>
+
+              {/* Language */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  لغة الأسئلة
+                </label>
+                <select
+                  value={generateOptions.language}
+                  onChange={(e) => setGenerateOptions({
+                    ...generateOptions,
+                    language: e.target.value
+                  })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="ar">العربية</option>
+                  <option value="en">English</option>
+                  <option value="fr">Français</option>
+                  <option value="de">Deutsch</option>
+                  <option value="es">Español</option>
+                  <option value="tr">Türkçe</option>
+                  <option value="ur">اردو</option>
                 </select>
               </div>
 

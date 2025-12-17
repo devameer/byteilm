@@ -1,12 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import teamService from '../../services/teamService';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const TeamActivityLog = ({ teamId }) => {
+    const { darkMode } = useTheme();
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState('all');
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+
+    // Theme-aware classes
+    const cardClass = darkMode 
+        ? 'bg-gray-800 border-gray-700' 
+        : 'bg-white border-slate-200';
+    const textPrimary = darkMode ? 'text-gray-100' : 'text-slate-800';
+    const textSecondary = darkMode ? 'text-gray-400' : 'text-slate-500';
+    const emptyBg = darkMode ? 'bg-gray-700' : 'bg-slate-50';
+    const filterBtnInactive = darkMode 
+        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+        : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+    const itemBorderClass = darkMode 
+        ? 'border-gray-700 hover:border-indigo-500' 
+        : 'border-slate-100 hover:border-indigo-200';
+    const loadMoreBtnClass = darkMode 
+        ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
+        : 'bg-slate-100 hover:bg-slate-200 text-slate-700';
 
     useEffect(() => {
         if (teamId) {
@@ -39,18 +58,18 @@ const TeamActivityLog = ({ teamId }) => {
 
     const getActivityIcon = (type) => {
         const icons = {
-            member_added: { icon: 'fa-user-plus', color: 'text-green-500', bg: 'bg-green-50' },
-            member_removed: { icon: 'fa-user-minus', color: 'text-red-500', bg: 'bg-red-50' },
-            member_role_changed: { icon: 'fa-user-tag', color: 'text-blue-500', bg: 'bg-blue-50' },
-            resource_shared: { icon: 'fa-share-alt', color: 'text-purple-500', bg: 'bg-purple-50' },
-            resource_unshared: { icon: 'fa-unlink', color: 'text-orange-500', bg: 'bg-orange-50' },
-            team_created: { icon: 'fa-plus-circle', color: 'text-indigo-500', bg: 'bg-indigo-50' },
-            team_updated: { icon: 'fa-edit', color: 'text-yellow-500', bg: 'bg-yellow-50' },
-            team_deleted: { icon: 'fa-trash', color: 'text-red-500', bg: 'bg-red-50' },
-            task_shared: { icon: 'fa-tasks', color: 'text-cyan-500', bg: 'bg-cyan-50' },
-            task_assigned: { icon: 'fa-user-check', color: 'text-teal-500', bg: 'bg-teal-50' },
+            member_added: { icon: 'fa-user-plus', color: 'text-green-500', bg: darkMode ? 'bg-green-900/30' : 'bg-green-50' },
+            member_removed: { icon: 'fa-user-minus', color: 'text-red-500', bg: darkMode ? 'bg-red-900/30' : 'bg-red-50' },
+            member_role_changed: { icon: 'fa-user-tag', color: 'text-blue-500', bg: darkMode ? 'bg-blue-900/30' : 'bg-blue-50' },
+            resource_shared: { icon: 'fa-share-alt', color: 'text-purple-500', bg: darkMode ? 'bg-purple-900/30' : 'bg-purple-50' },
+            resource_unshared: { icon: 'fa-unlink', color: 'text-orange-500', bg: darkMode ? 'bg-orange-900/30' : 'bg-orange-50' },
+            team_created: { icon: 'fa-plus-circle', color: 'text-indigo-500', bg: darkMode ? 'bg-indigo-900/30' : 'bg-indigo-50' },
+            team_updated: { icon: 'fa-edit', color: 'text-yellow-500', bg: darkMode ? 'bg-yellow-900/30' : 'bg-yellow-50' },
+            team_deleted: { icon: 'fa-trash', color: 'text-red-500', bg: darkMode ? 'bg-red-900/30' : 'bg-red-50' },
+            task_shared: { icon: 'fa-tasks', color: 'text-cyan-500', bg: darkMode ? 'bg-cyan-900/30' : 'bg-cyan-50' },
+            task_assigned: { icon: 'fa-user-check', color: 'text-teal-500', bg: darkMode ? 'bg-teal-900/30' : 'bg-teal-50' },
         };
-        return icons[type] || { icon: 'fa-circle', color: 'text-gray-500', bg: 'bg-gray-50' };
+        return icons[type] || { icon: 'fa-circle', color: 'text-gray-500', bg: darkMode ? 'bg-gray-700' : 'bg-gray-50' };
     };
 
     const getActivityDescription = (activity) => {
@@ -94,9 +113,9 @@ const TeamActivityLog = ({ teamId }) => {
     ];
 
     return (
-        <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
+        <div className={`${cardClass} rounded-2xl p-6 border-2 shadow-lg`}>
             <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-black text-slate-800 flex items-center">
+                <h3 className={`text-xl font-black ${textPrimary} flex items-center`}>
                     <i className="fas fa-history ml-2 text-indigo-500"></i>
                     سجل النشاطات
                 </h3>
@@ -112,7 +131,7 @@ const TeamActivityLog = ({ teamId }) => {
                             className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all ${
                                 filter === option.value
                                     ? 'bg-indigo-500 text-white shadow-md'
-                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                    : filterBtnInactive
                             }`}
                         >
                             <i className={`fas ${option.icon} ml-1`}></i>
@@ -125,13 +144,13 @@ const TeamActivityLog = ({ teamId }) => {
             {loading && activities.length === 0 ? (
                 <div className="text-center py-8">
                     <i className="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
-                    <p className="mt-2 text-slate-500">جاري التحميل...</p>
+                    <p className={`mt-2 ${textSecondary}`}>جاري التحميل...</p>
                 </div>
             ) : activities.length === 0 ? (
-                <div className="text-center py-12 bg-slate-50 rounded-xl">
-                    <i className="fas fa-history text-4xl text-slate-300 mb-3"></i>
-                    <p className="text-slate-500">لا توجد نشاطات لعرضها</p>
-                    <p className="text-xs text-slate-400 mt-1">ستظهر هنا جميع نشاطات الفريق</p>
+                <div className={`text-center py-12 ${emptyBg} rounded-xl`}>
+                    <i className={`fas fa-history text-4xl ${darkMode ? 'text-gray-600' : 'text-slate-300'} mb-3`}></i>
+                    <p className={textSecondary}>لا توجد نشاطات لعرضها</p>
+                    <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-slate-400'} mt-1`}>ستظهر هنا جميع نشاطات الفريق</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -140,17 +159,17 @@ const TeamActivityLog = ({ teamId }) => {
                         return (
                             <div
                                 key={`${activity.id}-${index}`}
-                                className="flex items-start gap-4 p-4 rounded-xl border-2 border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all"
+                                className={`flex items-start gap-4 p-4 rounded-xl border-2 ${itemBorderClass} hover:shadow-md transition-all`}
                             >
                                 <div className={`w-12 h-12 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
                                     <i className={`fas ${icon} ${color} text-xl`}></i>
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-slate-800 font-medium mb-1">
+                                    <p className={`${textPrimary} font-medium mb-1`}>
                                         {getActivityDescription(activity)}
                                     </p>
-                                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                                    <div className={`flex items-center gap-3 text-xs ${textSecondary}`}>
                                         <span className="flex items-center gap-1">
                                             <i className="fas fa-clock"></i>
                                             {formatDate(activity.created_at)}
@@ -168,7 +187,7 @@ const TeamActivityLog = ({ teamId }) => {
                                     <img
                                         src={activity.actor.avatar}
                                         alt={activity.actor.name}
-                                        className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
+                                        className={`w-10 h-10 rounded-full border-2 ${darkMode ? 'border-gray-700' : 'border-white'} shadow-sm`}
                                     />
                                 )}
                             </div>
@@ -179,7 +198,7 @@ const TeamActivityLog = ({ teamId }) => {
                         <button
                             onClick={() => loadActivities(true)}
                             disabled={loading}
-                            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all disabled:opacity-50"
+                            className={`w-full py-3 ${loadMoreBtnClass} font-bold rounded-xl transition-all disabled:opacity-50`}
                         >
                             {loading ? (
                                 <><i className="fas fa-spinner fa-spin ml-2"></i>جاري التحميل...</>

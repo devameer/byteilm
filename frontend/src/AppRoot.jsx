@@ -8,7 +8,7 @@ import Layout from "./components/Layout";
 import { publicRoutes, privateRoutes } from "./routes";
 import LimitReachedModal from "./components/feedback/LimitReachedModal";
 import { setLimitReachedHandler, setToastHandler } from "./services/api";
-import AppLoadingSkeleton from "./components/AppLoadingSkeleton";
+import AppLoadingSkeleton from "./components/skeletons/AppLoadingSkeleton";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ToastContainer from "./components/ToastContainer";
 import { PWAInstallPrompt, PWAUpdatePrompt } from "./components/pwa";

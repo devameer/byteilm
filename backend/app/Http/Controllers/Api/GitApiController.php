@@ -73,4 +73,77 @@ class GitApiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Execute composer install on the server.
+     */
+    public function composerInstall()
+    {
+        try {
+            $result = Process::path(base_path())
+                ->timeout(300) // 5 minutes timeout for composer
+                ->run('composer install --no-interaction --prefer-dist --optimize-autoloader');
+
+            return response()->json([
+                'success' => $result->successful(),
+                'message' => $result->successful() ? 'تم تنفيذ composer install بنجاح' : 'فشل تنفيذ composer install',
+                'output' => $result->output(),
+                'error' => $result->errorOutput(),
+            ], $result->successful() ? 200 : 500);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء تنفيذ الأمر: ' . $exception->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Execute php artisan migrate on the server.
+     */
+    public function migrate()
+    {
+        try {
+            $result = Process::path(base_path())
+                ->timeout(120)
+                ->run('php artisan migrate --force');
+
+            return response()->json([
+                'success' => $result->successful(),
+                'message' => $result->successful() ? 'تم تنفيذ الترحيل بنجاح' : 'فشل تنفيذ الترحيل',
+                'output' => $result->output(),
+                'error' => $result->errorOutput(),
+            ], $result->successful() ? 200 : 500);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء تنفيذ الأمر: ' . $exception->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Execute php artisan migrate:fresh --seed on the server.
+     * WARNING: This will delete all data!
+     */
+    public function migrateFresh()
+    {
+        try {
+            $result = Process::path(base_path())
+                ->timeout(300)
+                ->run('php artisan migrate:fresh --seed --force');
+
+            return response()->json([
+                'success' => $result->successful(),
+                'message' => $result->successful() ? 'تم إعادة إنشاء قاعدة البيانات بنجاح' : 'فشل إعادة إنشاء قاعدة البيانات',
+                'output' => $result->output(),
+                'error' => $result->errorOutput(),
+            ], $result->successful() ? 200 : 500);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء تنفيذ الأمر: ' . $exception->getMessage(),
+            ], 500);
+        }
+    }
 }

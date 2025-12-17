@@ -4,7 +4,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import courseService from "../services/courseService";
 import categoryService from "../services/categoryService";
 import Modal from "../components/Modal";
-import CoursesPageSkeleton from "../components/courses/CoursesPageSkeleton";
+import CoursesPageSkeleton from "../components/skeletons/CoursesPageSkeleton";
 
 const PLACEHOLDER_IMAGE =
     "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1000&q=80";

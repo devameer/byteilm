@@ -98,6 +98,26 @@ class LessonVideoApiController extends Controller
                 // Duration can be updated manually later
             }
 
+            // Extract audio from video (for faster transcription)
+            try {
+                if ($this->videoService->isFFmpegAvailable()) {
+                    $audioData = $this->videoService->extractAudio($videoData['file_path'], $lesson->id);
+                    if ($audioData) {
+                        $videoData['audio_path'] = $audioData['audio_path'];
+                        \Log::info('Audio extracted successfully', [
+                            'lesson_id' => $lesson->id,
+                            'audio_path' => $audioData['audio_path']
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                // Audio extraction failed, continue without it
+                \Log::warning('Audio extraction failed', [
+                    'lesson_id' => $lesson->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             // Create video record
             $video = $lesson->video()->create($videoData);
 
@@ -397,17 +417,79 @@ class LessonVideoApiController extends Controller
             }
             fclose($output);
 
-            // Upload merged file to storage (S3 or local)
+            // Get file size from temp file
+            $fileSize = filesize($tempMergedPath);
+
+            // Extract audio from temp file BEFORE uploading (parallel processing)
+            $audioPath = null;
+            try {
+                if ($this->videoService->isFFmpegAvailable()) {
+                    // Extract audio directly from the temp merged file
+                    $tempAudioPath = storage_path('app/temp/' . pathinfo($fileName, PATHINFO_FILENAME) . '.mp3');
+
+                    // Run FFmpeg on the local temp file
+                    $command = sprintf(
+                        'ffmpeg -i %s -vn -acodec libmp3lame -ab 128k -ar 44100 -y %s 2>&1',
+                        escapeshellarg($tempMergedPath),
+                        escapeshellarg($tempAudioPath)
+                    );
+
+                    exec($command, $ffmpegOutput, $returnCode);
+
+                    if ($returnCode === 0 && file_exists($tempAudioPath)) {
+                        // Audio extracted successfully, will upload to S3 after video
+                        \Log::info('Audio extracted from temp file', [
+                            'lesson_id' => $lesson->id,
+                            'temp_audio_path' => $tempAudioPath
+                        ]);
+                    } else {
+                        $tempAudioPath = null;
+                        \Log::warning('FFmpeg audio extraction failed', [
+                            'return_code' => $returnCode,
+                            'output' => implode("\n", $ffmpegOutput)
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                $tempAudioPath = null;
+                \Log::warning('Audio extraction failed', [
+                    'lesson_id' => $lesson->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            // Upload video to S3
             $fileContent = file_get_contents($tempMergedPath);
             Storage::disk($disk)->put($storagePath, $fileContent);
+            unset($fileContent); // Free memory
 
             // Set permissions for S3
             if ($disk === 's3') {
                 Storage::disk('s3')->setVisibility($storagePath, 'private');
             }
 
-            // Get file size
-            $fileSize = filesize($tempMergedPath);
+            // Upload audio to S3 if extracted
+            if (isset($tempAudioPath) && file_exists($tempAudioPath)) {
+                $audioDirectory = "audio/lessons/{$lesson->id}";
+                $audioFileName = pathinfo($fileName, PATHINFO_FILENAME) . '.mp3';
+                $audioPath = $audioDirectory . '/' . $audioFileName;
+
+                $audioContent = file_get_contents($tempAudioPath);
+                Storage::disk($disk)->put($audioPath, $audioContent);
+                unset($audioContent); // Free memory
+
+                if ($disk === 's3') {
+                    Storage::disk('s3')->setVisibility($audioPath, 'private');
+                }
+
+                // Delete temp audio file
+                @unlink($tempAudioPath);
+
+                \Log::info('Audio uploaded to S3', [
+                    'lesson_id' => $lesson->id,
+                    'audio_path' => $audioPath
+                ]);
+            }
 
             // Clean up temp files
             $this->cleanupTempFiles($tempDir);
@@ -427,16 +509,20 @@ class LessonVideoApiController extends Controller
                 'file_size' => $fileSize,
                 'mime_type' => $session['file_type'],
                 'source_url' => null,
+                'audio_path' => $audioPath,
             ];
 
             if ($response = $this->ensureStorageAllowance($request->user(), $videoData['file_size'], $existingVideoSize)) {
                 DB::rollBack();
                 // Delete from storage if quota exceeded
                 Storage::disk($disk)->delete($storagePath);
+                if ($audioPath) {
+                    Storage::disk($disk)->delete($audioPath);
+                }
                 return $response;
             }
 
-            // Extract duration
+            // Extract duration (from S3)
             try {
                 $duration = $this->videoService->extractDuration($videoData['file_path']);
                 if ($duration) {

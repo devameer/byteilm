@@ -7,7 +7,8 @@ import SubtitleUploader from "../components/lesson/SubtitleUploader";
 import SubtitleGenerator from "../components/lesson/SubtitleGenerator";
 import EnhancedVideoPlayer from "../components/lesson/EnhancedVideoPlayer";
 import LessonSummary from "../components/lesson/LessonSummary";
-import LessonMediaSkeleton from "../components/lesson/LessonMediaSkeleton";
+import LessonMediaSkeleton from "../components/skeletons/LessonMediaSkeleton";
+import QuizList from "../components/QuizList";
 
 export default function LessonMedia() {
     const { darkMode } = useTheme();
@@ -260,6 +261,20 @@ export default function LessonMedia() {
                     >
                         الملخص
                     </button>
+                    <button
+                        onClick={() => setActiveTab("quiz")}
+                        className={`pb-2 px-1 border-b-2 font-medium transition-colors ${
+                            activeTab === "quiz"
+                                ? darkMode
+                                    ? "border-blue-400 text-blue-400"
+                                    : "border-blue-500 text-blue-600"
+                                : darkMode
+                                ? "border-transparent text-gray-400 hover:text-gray-300"
+                                : "border-transparent text-gray-500 hover:text-gray-700"
+                        }`}
+                    >
+                        الاختبارات
+                    </button>
                 </nav>
             </div>
 
@@ -349,9 +364,11 @@ export default function LessonMedia() {
 
                             <div
                                 id="ai-generator-section"
-                                className={`bg-white rounded-lg shadow p-6 transition-all ${
+                                className={`rounded-lg shadow p-6 transition-all ${
+                                    darkMode ? 'bg-gray-800' : 'bg-white'
+                                } ${
                                     focusAIGenerator
-                                        ? "ring-4 ring-purple-300"
+                                        ? darkMode ? "ring-4 ring-purple-500" : "ring-4 ring-purple-300"
                                         : ""
                                 }`}
                             >
@@ -376,12 +393,25 @@ export default function LessonMedia() {
                     )}
 
                     {activeTab === "summary" && (
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className={`rounded-lg shadow p-6 transition-colors duration-300 ${
+                            darkMode ? 'bg-gray-800' : 'bg-white'
+                        }`}>
                             <LessonSummary
                                 lessonId={id}
                                 initialSummary={lesson.summary}
                                 onUpdate={handleSummaryUpdate}
                                 video={video}
+                            />
+                        </div>
+                    )}
+
+                    {activeTab === "quiz" && (
+                        <div className={`rounded-lg shadow p-6 transition-colors duration-300 ${
+                            darkMode ? 'bg-gray-800' : 'bg-white'
+                        }`}>
+                            <QuizList
+                                lessonId={id}
+                                isInstructor={true}
                             />
                         </div>
                     )}

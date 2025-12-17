@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function LessonSummary({ lessonId, initialSummary, onUpdate, video }) {
+    const { darkMode } = useTheme();
     const [summary, setSummary] = useState(initialSummary || '');
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -100,7 +102,7 @@ export default function LessonSummary({ lessonId, initialSummary, onUpdate, vide
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">ملخص الدرس</h3>
+                <h3 className={`text-lg font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>ملخص الدرس</h3>
                 <div className="flex gap-2">
                     {video && !isEditing && (
                         <button
@@ -135,19 +137,27 @@ export default function LessonSummary({ lessonId, initialSummary, onUpdate, vide
                         value={summary}
                         onChange={handleChange}
                         placeholder="اكتب ملخص الدرس هنا..."
-                        className="w-full h-48 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                        className={`w-full h-48 px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
+                            darkMode 
+                                ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400' 
+                                : 'bg-white border-gray-300 text-gray-900'
+                        }`}
                         disabled={saving}
                     />
 
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-500">
+                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {summary.length} حرف
                         </p>
                         <div className="flex gap-2">
                             <button
                                 onClick={handleCancel}
                                 disabled={saving}
-                                className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+                                className={`px-4 py-2 text-sm border rounded disabled:opacity-50 ${
+                                    darkMode 
+                                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
                             >
                                 إلغاء
                             </button>
@@ -169,11 +179,11 @@ export default function LessonSummary({ lessonId, initialSummary, onUpdate, vide
                     </div>
                 </div>
             ) : (
-                <div className="p-4 bg-gray-50 rounded-lg min-h-32">
+                <div className={`p-4 rounded-lg min-h-32 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     {summary ? (
-                        <p className="text-gray-700 whitespace-pre-wrap">{summary}</p>
+                        <p className={`whitespace-pre-wrap ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{summary}</p>
                     ) : (
-                        <p className="text-gray-400 italic">
+                        <p className={`italic ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                             لا يوجد ملخص لهذا الدرس بعد
                         </p>
                     )}
@@ -181,10 +191,15 @@ export default function LessonSummary({ lessonId, initialSummary, onUpdate, vide
             )}
 
             {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                <div className={`p-3 border rounded text-sm ${
+                    darkMode 
+                        ? 'bg-red-900/30 border-red-800 text-red-300' 
+                        : 'bg-red-50 border-red-200 text-red-700'
+                }`}>
                     {error}
                 </div>
             )}
         </div>
     );
 }
+

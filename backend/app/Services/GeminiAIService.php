@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
 class GeminiAIService
 {
     protected $apiKey;
-    protected $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    protected $apiUrl = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent';
 
     public function __construct()
     {
@@ -35,7 +35,7 @@ class GeminiAIService
             'lesson_id' => $lesson->id,
             'user_id' => $userId,
             'status' => 'processing',
-            'ai_model' => 'gemini-pro'
+            'ai_model' => 'gemini-1.5-flash'
         ]);
 
         try {
@@ -49,7 +49,8 @@ class GeminiAIService
                 $videoContent,
                 $options['num_questions'] ?? 10,
                 $options['difficulty'] ?? 'medium',
-                $options['question_types'] ?? ['multiple_choice', 'true_false']
+                $options['question_types'] ?? ['multiple_choice', 'true_false'],
+                $options['language'] ?? 'ar'
             );
 
             // Create quiz
@@ -127,54 +128,98 @@ class GeminiAIService
 
     /**
      * Extract video content/transcript
+     * Priority: 1. Video subtitle transcript, 2. Lesson metadata transcript, 3. Throw exception
      */
     protected function extractVideoContent(Lesson $lesson)
     {
-        // Option 1: If transcript is stored in lesson
-        if (isset($lesson->metadata['transcript'])) {
+        // Priority 1: Get transcript from video subtitles
+        $video = $lesson->load('video.subtitles')->video;
+        if ($video && $video->subtitles && $video->subtitles->count() > 0) {
+            // Get the first subtitle (usually the original language)
+            $subtitle = $video->subtitles->first();
+            $content = $subtitle->getContent();
+
+            if ($content && strlen(trim($content)) > 100) {
+                // Parse VTT/SRT content to extract plain text (remove timestamps)
+                $transcript = $this->parseSubtitleToText($content);
+                if ($transcript && strlen(trim($transcript)) > 50) {
+                    Log::info('Quiz generation using video subtitle transcript', [
+                        'lesson_id' => $lesson->id,
+                        'subtitle_language' => $subtitle->language,
+                        'transcript_length' => strlen($transcript)
+                    ]);
+                    return $transcript;
+                }
+            }
+        }
+
+        // Priority 2: If transcript is stored in lesson metadata
+        if (isset($lesson->metadata['transcript']) && strlen(trim($lesson->metadata['transcript'])) > 100) {
+            Log::info('Quiz generation using lesson metadata transcript', [
+                'lesson_id' => $lesson->id,
+                'transcript_length' => strlen($lesson->metadata['transcript'])
+            ]);
             return $lesson->metadata['transcript'];
         }
 
-        // Option 2: Use lesson description and content
-        $content = $lesson->title . "\n\n";
+        // No transcript available - throw exception
+        throw new \Exception('لا يوجد نص تفريغ (transcript) للفيديو. يرجى توليد التفريغ أولاً من تبويب "إدارة الوسائط" قبل إنشاء الاختبار.');
+    }
 
-        if ($lesson->description) {
-            $content .= $lesson->description . "\n\n";
-        }
+    /**
+     * Parse subtitle content (VTT/SRT) to plain text
+     */
+    protected function parseSubtitleToText($content)
+    {
+        // Remove VTT header
+        $content = preg_replace('/^WEBVTT.*$/m', '', $content);
 
-        if ($lesson->content) {
-            $content .= $lesson->content;
-        }
+        // Remove NOTE comments
+        $content = preg_replace('/^NOTE.*$/m', '', $content);
 
-        // Option 3: In production, integrate with YouTube API or video transcription service
-        // For now, return available content
+        // Remove cue identifiers (lines that are just numbers or contain -->)
+        $content = preg_replace('/^\\d+$/m', '', $content);
+
+        // Remove timestamp lines (00:00:00.000 --> 00:00:00.000)
+        $content = preg_replace('/^[\\d:.,\\s]+-->.*$/m', '', $content);
+
+        // Remove inline timestamps like <00:00:00.000>
+        $content = preg_replace('/<[\\d:.,]+>/', '', $content);
+
+        // Remove VTT formatting tags
+        $content = preg_replace('/<[^>]+>/', '', $content);
+
+        // Remove extra whitespace and empty lines
+        $content = preg_replace('/\\n{3,}/', "\n\n", $content);
+        $content = trim($content);
+
         return $content;
     }
 
     /**
      * Generate questions using Gemini AI
      */
-    protected function generateQuestions($content, $numQuestions = 10, $difficulty = 'medium', $questionTypes = ['multiple_choice', 'true_false'])
+    protected function generateQuestions($content, $numQuestions = 10, $difficulty = 'medium', $questionTypes = ['multiple_choice', 'true_false'], $language = 'ar')
     {
-        $prompt = $this->buildPrompt($content, $numQuestions, $difficulty, $questionTypes);
+        $prompt = $this->buildPrompt($content, $numQuestions, $difficulty, $questionTypes, $language);
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(60)->withHeaders([
             'Content-Type' => 'application/json',
         ])->post($this->apiUrl . '?key=' . $this->apiKey, [
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt]
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => $prompt]
+                            ]
+                        ]
+                    ],
+                    'generationConfig' => [
+                        'temperature' => 0.7,
+                        'topK' => 40,
+                        'topP' => 0.95,
+                        'maxOutputTokens' => 2048,
                     ]
-                ]
-            ],
-            'generationConfig' => [
-                'temperature' => 0.7,
-                'topK' => 40,
-                'topP' => 0.95,
-                'maxOutputTokens' => 2048,
-            ]
-        ]);
+                ]);
 
         if (!$response->successful()) {
             throw new \Exception('Gemini API request failed: ' . $response->body());
@@ -189,7 +234,7 @@ class GeminiAIService
     /**
      * Build prompt for Gemini AI
      */
-    protected function buildPrompt($content, $numQuestions, $difficulty, $questionTypes)
+    protected function buildPrompt($content, $numQuestions, $difficulty, $questionTypes, $language = 'ar')
     {
         $typesStr = implode(', ', $questionTypes);
         $difficultyDescriptions = [
@@ -197,6 +242,10 @@ class GeminiAIService
             'medium' => 'أسئلة متوسطة تتطلب فهم المفاهيم وتطبيقها',
             'hard' => 'أسئلة صعبة تتطلب تحليل عميق وتفكير نقدي'
         ];
+
+        // Language instructions
+        $languageInstructions = $this->getQuizLanguageInstructions($language);
+        $trueFalseOptions = $this->getTrueFalseOptions($language);
 
         $prompt = <<<PROMPT
 أنت خبير في إنشاء الاختبارات التعليمية. بناءً على المحتوى التالي، قم بإنشاء {$numQuestions} سؤال اختبار.
@@ -210,6 +259,7 @@ class GeminiAIService
 - يجب أن تكون الأسئلة واضحة ومباشرة
 - يجب أن تغطي الأسئلة جوانب مختلفة من المحتوى
 - قدم تفسيراً للإجابة الصحيحة
+- **مهم جداً: اكتب جميع الأسئلة والخيارات والتفسيرات {$languageInstructions}**
 
 **تنسيق الإخراج (JSON):**
 ```json
@@ -226,7 +276,7 @@ class GeminiAIService
   {
     "type": "true_false",
     "question": "العبارة هنا؟",
-    "options": ["صح", "خطأ"],
+    "options": {$trueFalseOptions},
     "correct_answer": "0",
     "explanation": "التفسير هنا",
     "points": 1,
@@ -237,7 +287,7 @@ class GeminiAIService
 
 **ملاحظات مهمة:**
 1. للأسئلة من نوع multiple_choice: ضع 4 خيارات، correct_answer هو رقم الخيار (0-3)
-2. للأسئلة من نوع true_false: ضع خيارين فقط ["صح", "خطأ"]، correct_answer هو 0 أو 1
+2. للأسئلة من نوع true_false: ضع خيارين فقط {$trueFalseOptions}، correct_answer هو 0 أو 1
 3. للأسئلة من نوع fill_blank: correct_answer هو النص المطلوب
 4. للأسئلة من نوع short_answer: correct_answer هو الإجابة المتوقعة
 5. confidence يجب أن يكون بين 0 و 1 ويعبر عن ثقتك في السؤال
@@ -246,6 +296,40 @@ class GeminiAIService
 PROMPT;
 
         return $prompt;
+    }
+
+    /**
+     * Get language instructions for quiz generation
+     */
+    protected function getQuizLanguageInstructions($language)
+    {
+        $languages = [
+            'ar' => 'باللغة العربية',
+            'en' => 'in English',
+            'fr' => 'en français',
+            'de' => 'auf Deutsch',
+            'es' => 'en español',
+            'tr' => 'Türkçe olarak',
+            'ur' => 'اردو میں'
+        ];
+        return $languages[$language] ?? $languages['ar'];
+    }
+
+    /**
+     * Get true/false options based on language
+     */
+    protected function getTrueFalseOptions($language)
+    {
+        $options = [
+            'ar' => '["صح", "خطأ"]',
+            'en' => '["True", "False"]',
+            'fr' => '["Vrai", "Faux"]',
+            'de' => '["Richtig", "Falsch"]',
+            'es' => '["Verdadero", "Falso"]',
+            'tr' => '["Doğru", "Yanlış"]',
+            'ur' => '["درست", "غلط"]'
+        ];
+        return $options[$language] ?? $options['ar'];
     }
 
     /**
@@ -378,14 +462,14 @@ PROMPT;
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
         ])->post($this->apiUrl . '?key=' . $this->apiKey, [
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt]
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => $prompt]
+                            ]
+                        ]
                     ]
-                ]
-            ]
-        ]);
+                ]);
 
         if ($response->successful()) {
             $responseData = $response->json();
@@ -408,14 +492,14 @@ PROMPT;
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
             ])->post($this->apiUrl . '?key=' . $this->apiKey, [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => 'Hello, are you working?']
+                        'contents' => [
+                            [
+                                'parts' => [
+                                    ['text' => 'Hello, are you working?']
+                                ]
+                            ]
                         ]
-                    ]
-                ]
-            ]);
+                    ]);
 
             return $response->successful();
         } catch (\Exception $e) {
@@ -440,14 +524,14 @@ PROMPT;
             $response = Http::timeout(30)->withHeaders([
                 'Content-Type' => 'application/json',
             ])->post($this->apiUrl . '?key=' . $this->apiKey, [
-                'contents' => $this->formatConversationForGemini($conversationHistory, $message),
-                'generationConfig' => [
-                    'temperature' => 0.8,
-                    'topK' => 40,
-                    'topP' => 0.95,
-                    'maxOutputTokens' => 1024,
-                ]
-            ]);
+                        'contents' => $this->formatConversationForGemini($conversationHistory, $message),
+                        'generationConfig' => [
+                            'temperature' => 0.8,
+                            'topK' => 40,
+                            'topP' => 0.95,
+                            'maxOutputTokens' => 1024,
+                        ]
+                    ]);
 
             if (!$response->successful()) {
                 throw new \Exception('Gemini API request failed: ' . $response->body());
@@ -785,15 +869,15 @@ PROMPT;
         $response = Http::timeout(30)->withHeaders([
             'Content-Type' => 'application/json',
         ])->post($this->apiUrl . '?key=' . $this->apiKey, [
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt]
-                    ]
-                ]
-            ],
-            'generationConfig' => array_merge($defaultConfig, $config)
-        ]);
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => $prompt]
+                            ]
+                        ]
+                    ],
+                    'generationConfig' => array_merge($defaultConfig, $config)
+                ]);
 
         if (!$response->successful()) {
             throw new \Exception('Gemini API request failed: ' . $response->body());

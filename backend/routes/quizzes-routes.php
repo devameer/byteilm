@@ -9,50 +9,47 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Routes for AI-Powered Quiz System
-| يجب إضافتها في routes/api.php داخل middleware('auth:sanctum')
+| هذا الملف يُستدعى من داخل middleware('auth:sanctum') في api.php
 |
 */
 
-Route::middleware('auth:sanctum')->group(function () {
+// Lesson quizzes
+Route::prefix('lessons/{lessonId}')->group(function () {
+    // Get all quizzes for a lesson
+    Route::get('/quizzes', [QuizController::class, 'index']);
 
-    // Lesson quizzes
-    Route::prefix('lessons/{lessonId}')->group(function () {
-        // Get all quizzes for a lesson
-        Route::get('/quizzes', [QuizController::class, 'index']);
+    // Generate quiz using AI
+    Route::post('/quizzes/generate', [QuizController::class, 'generateWithAI']);
 
-        // Generate quiz using AI
-        Route::post('/quizzes/generate', [QuizController::class, 'generateWithAI']);
+    // Create quiz manually
+    Route::post('/quizzes', [QuizController::class, 'store']);
+});
 
-        // Create quiz manually
-        Route::post('/quizzes', [QuizController::class, 'store']);
-    });
+// Quiz management
+Route::prefix('quizzes')->group(function () {
+    // Get quiz details
+    Route::get('/{id}', [QuizController::class, 'show']);
 
-    // Quiz management
-    Route::prefix('quizzes')->group(function () {
-        // Get quiz details
-        Route::get('/{id}', [QuizController::class, 'show']);
+    // Delete quiz
+    Route::delete('/{id}', [QuizController::class, 'destroy']);
 
-        // Delete quiz
-        Route::delete('/{id}', [QuizController::class, 'destroy']);
+    // Start quiz attempt
+    Route::post('/{id}/start', [QuizController::class, 'startAttempt']);
 
-        // Start quiz attempt
-        Route::post('/{id}/start', [QuizController::class, 'startAttempt']);
+    // Get user's attempts for quiz
+    Route::get('/{id}/attempts', [QuizController::class, 'getUserAttempts']);
+});
 
-        // Get user's attempts for quiz
-        Route::get('/{id}/attempts', [QuizController::class, 'getUserAttempts']);
-    });
+// Quiz attempts
+Route::prefix('quiz-attempts')->group(function () {
+    // Submit answer to question
+    Route::post('/{attemptId}/answer', [QuizController::class, 'submitAnswer']);
 
-    // Quiz attempts
-    Route::prefix('quiz-attempts')->group(function () {
-        // Submit answer to question
-        Route::post('/{attemptId}/answer', [QuizController::class, 'submitAnswer']);
+    // Submit/Complete quiz
+    Route::post('/{attemptId}/submit', [QuizController::class, 'submitQuiz']);
 
-        // Submit/Complete quiz
-        Route::post('/{attemptId}/submit', [QuizController::class, 'submitQuiz']);
-
-        // Get attempt results
-        Route::get('/{attemptId}/results', [QuizController::class, 'getResults']);
-    });
+    // Get attempt results
+    Route::get('/{attemptId}/results', [QuizController::class, 'getResults']);
 });
 
 /*

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import referralService from '../services/referralService';
 import Button from '../components/Button.jsx';
-import ReferralsPageSkeleton from '../components/referrals/ReferralsPageSkeleton';
+import ReferralsPageSkeleton from '../components/skeletons/ReferralsPageSkeleton';
 
 function Referrals() {
     const { darkMode } = useTheme();

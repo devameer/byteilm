@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import promptService from '../services/promptService';
 import Modal from '../components/Modal';
-import PromptsPageSkeleton from '../components/prompts/PromptsPageSkeleton';
+import PromptsPageSkeleton from '../components/skeletons/PromptsPageSkeleton';
 
 function Prompts() {
     const { darkMode } = useTheme();

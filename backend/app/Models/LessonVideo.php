@@ -16,6 +16,7 @@ class LessonVideo extends Model
         'lesson_id',
         'file_name',
         'file_path',
+        'audio_path',
         'file_size',
         'duration',
         'mime_type',
@@ -28,7 +29,7 @@ class LessonVideo extends Model
         'duration' => 'integer',
     ];
 
-    protected $appends = ['video_url', 'proxy_video_url', 'thumbnail_url', 'formatted_size', 'formatted_duration'];
+    protected $appends = ['video_url', 'proxy_video_url', 'audio_url', 'thumbnail_url', 'formatted_size', 'formatted_duration'];
 
     /**
      * Get the lesson that owns the video.
@@ -125,6 +126,37 @@ class LessonVideo extends Model
 
         // For local storage, use standard URL
         return Storage::disk($disk)->url($this->thumbnail_path);
+    }
+
+    /**
+     * Get the full URL for the audio file.
+     */
+    public function getAudioUrlAttribute()
+    {
+        if (!$this->audio_path) {
+            return null;
+        }
+
+        $disk = config('filesystems.default');
+
+        // For S3, generate temporary signed URL (valid for 2 hours)
+        if ($disk === 's3') {
+            try {
+                return Storage::disk('s3')->temporaryUrl(
+                    $this->audio_path,
+                    now()->addHours(2)
+                );
+            } catch (\Exception $e) {
+                \Log::error('Failed to generate S3 signed URL for audio', [
+                    'file_path' => $this->audio_path,
+                    'error' => $e->getMessage()
+                ]);
+                return null;
+            }
+        }
+
+        // For local storage, use standard URL
+        return Storage::disk($disk)->url($this->audio_path);
     }
 
     /**

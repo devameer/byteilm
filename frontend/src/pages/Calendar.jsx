@@ -15,7 +15,7 @@ import TimelineView from "../components/calendar/TimelineView";
 import AgendaView from "../components/calendar/AgendaView";
 import PomodoroTimer from "../components/calendar/PomodoroTimer";
 import ProductivityWidget from "../components/calendar/ProductivityWidget";
-import CalendarPageSkeleton from "../components/calendar/CalendarPageSkeleton";
+import CalendarPageSkeleton from "../components/skeletons/CalendarPageSkeleton";
 import SearchableSelect from "../components/SearchableSelect";
 
 function formatDateISO(date) {

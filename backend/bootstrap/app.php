@@ -10,9 +10,9 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withProviders([
@@ -34,8 +34,14 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\ValidateRequestSize::class,
         ]);
 
+        // Exclude API routes from CSRF verification (using Bearer token auth)
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'sanctum/csrf-cookie',
+        ]);
+
         // Redirect unauthenticated users to admin login
-        $middleware->redirectGuestsTo(fn ($request) => route('admin.login'));
+        $middleware->redirectGuestsTo(fn($request) => route('admin.login'));
 
         // Track referral visits on all web requests
         $middleware->web(append: [

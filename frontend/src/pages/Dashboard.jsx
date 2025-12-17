@@ -7,7 +7,7 @@ import dashboardService from "../services/dashboardService";
 import StatsCard from "../components/dashboard/StatsCard";
 import QuickAction from "../components/dashboard/QuickAction";
 import UsageItem from "../components/dashboard/UsageItem";
-import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
+import DashboardSkeleton from "../components/skeletons/DashboardSkeleton";
 
 function Dashboard() {
     const { user } = useAuth();

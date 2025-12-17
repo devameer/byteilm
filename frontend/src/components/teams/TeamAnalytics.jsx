@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
 import teamService from '../../services/teamService';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const TeamAnalytics = ({ teamId, teamName }) => {
+    const { darkMode } = useTheme();
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(false);
     const [period, setPeriod] = useState('week');
@@ -11,6 +13,16 @@ const TeamAnalytics = ({ teamId, teamName }) => {
     const memberChartRef = useRef(null);
     const activityChartInstance = useRef(null);
     const memberChartInstance = useRef(null);
+
+    // Theme-aware classes
+    const cardClass = darkMode 
+        ? 'bg-gray-800 border-gray-700' 
+        : 'bg-white border-slate-200';
+    const textPrimary = darkMode ? 'text-gray-100' : 'text-slate-800';
+    const textSecondary = darkMode ? 'text-gray-400' : 'text-slate-500';
+    const periodBtnInactive = darkMode 
+        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+        : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
 
     useEffect(() => {
         if (teamId) {
@@ -26,7 +38,7 @@ const TeamAnalytics = ({ teamId, teamName }) => {
             if (activityChartInstance.current) activityChartInstance.current.destroy();
             if (memberChartInstance.current) memberChartInstance.current.destroy();
         };
-    }, [analytics]);
+    }, [analytics, darkMode]);
 
     const loadAnalytics = async () => {
         setLoading(true);
@@ -44,6 +56,9 @@ const TeamAnalytics = ({ teamId, teamName }) => {
 
     const renderCharts = () => {
         if (!analytics) return;
+
+        const gridColor = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+        const textColor = darkMode ? '#e5e7eb' : '#334155';
 
         // Activity Chart
         if (activityChartRef.current) {
@@ -72,7 +87,15 @@ const TeamAnalytics = ({ teamId, teamName }) => {
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { stepSize: 1, color: textColor },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { color: gridColor }
+                        }
                     }
                 }
             });
@@ -98,7 +121,7 @@ const TeamAnalytics = ({ teamId, teamName }) => {
                             'rgba(251, 146, 60, 0.8)',
                         ],
                         borderWidth: 2,
-                        borderColor: '#fff'
+                        borderColor: darkMode ? '#1f2937' : '#fff'
                     }]
                 },
                 options: {
@@ -107,7 +130,11 @@ const TeamAnalytics = ({ teamId, teamName }) => {
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { padding: 15, font: { size: 12 } }
+                            labels: { 
+                                padding: 15, 
+                                font: { size: 12 },
+                                color: textColor
+                            }
                         }
                     }
                 }
@@ -117,10 +144,10 @@ const TeamAnalytics = ({ teamId, teamName }) => {
 
     if (loading) {
         return (
-            <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
+            <div className={`${cardClass} rounded-2xl p-6 border-2 shadow-lg`}>
                 <div className="text-center py-12">
                     <i className="fas fa-spinner fa-spin text-4xl text-indigo-500 mb-4"></i>
-                    <p className="text-slate-500">جاري تحميل التحليلات...</p>
+                    <p className={textSecondary}>جاري تحميل التحليلات...</p>
                 </div>
             </div>
         );
@@ -129,9 +156,9 @@ const TeamAnalytics = ({ teamId, teamName }) => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
+            <div className={`${cardClass} rounded-2xl p-6 border-2 shadow-lg`}>
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-black text-slate-800 flex items-center">
+                    <h3 className={`text-xl font-black ${textPrimary} flex items-center`}>
                         <i className="fas fa-chart-line ml-2 text-indigo-500"></i>
                         تحليلات الفريق
                     </h3>
@@ -143,7 +170,7 @@ const TeamAnalytics = ({ teamId, teamName }) => {
                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                                     period === p
                                         ? 'bg-indigo-500 text-white shadow-md'
-                                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        : periodBtnInactive
                                 }`}
                             >
                                 {p === 'week' ? 'أسبوع' : p === 'month' ? 'شهر' : 'سنة'}
@@ -154,41 +181,41 @@ const TeamAnalytics = ({ teamId, teamName }) => {
 
                 {/* Key Metrics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-2 border-blue-200">
+                    <div className={`${darkMode ? 'bg-blue-900/30 border-blue-700' : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'} rounded-xl p-4 border-2`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-bold text-blue-600 mb-1">إجمالي النشاطات</p>
-                                <p className="text-3xl font-black text-blue-900">{analytics?.total_activities || 0}</p>
+                                <p className={`text-xs font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'} mb-1`}>إجمالي النشاطات</p>
+                                <p className={`text-3xl font-black ${darkMode ? 'text-blue-200' : 'text-blue-900'}`}>{analytics?.total_activities || 0}</p>
                             </div>
                             <i className="fas fa-chart-bar text-3xl text-blue-500"></i>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border-2 border-green-200">
+                    <div className={`${darkMode ? 'bg-green-900/30 border-green-700' : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'} rounded-xl p-4 border-2`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-bold text-green-600 mb-1">المهام المكتملة</p>
-                                <p className="text-3xl font-black text-green-900">{analytics?.completed_tasks || 0}</p>
+                                <p className={`text-xs font-bold ${darkMode ? 'text-green-400' : 'text-green-600'} mb-1`}>المهام المكتملة</p>
+                                <p className={`text-3xl font-black ${darkMode ? 'text-green-200' : 'text-green-900'}`}>{analytics?.completed_tasks || 0}</p>
                             </div>
                             <i className="fas fa-check-circle text-3xl text-green-500"></i>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border-2 border-purple-200">
+                    <div className={`${darkMode ? 'bg-purple-900/30 border-purple-700' : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200'} rounded-xl p-4 border-2`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-bold text-purple-600 mb-1">الأعضاء النشطون</p>
-                                <p className="text-3xl font-black text-purple-900">{analytics?.active_members || 0}</p>
+                                <p className={`text-xs font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'} mb-1`}>الأعضاء النشطون</p>
+                                <p className={`text-3xl font-black ${darkMode ? 'text-purple-200' : 'text-purple-900'}`}>{analytics?.active_members || 0}</p>
                             </div>
                             <i className="fas fa-users text-3xl text-purple-500"></i>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border-2 border-orange-200">
+                    <div className={`${darkMode ? 'bg-orange-900/30 border-orange-700' : 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200'} rounded-xl p-4 border-2`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-bold text-orange-600 mb-1">معدل الإنجاز</p>
-                                <p className="text-3xl font-black text-orange-900">{analytics?.completion_rate || 0}%</p>
+                                <p className={`text-xs font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'} mb-1`}>معدل الإنجاز</p>
+                                <p className={`text-3xl font-black ${darkMode ? 'text-orange-200' : 'text-orange-900'}`}>{analytics?.completion_rate || 0}%</p>
                             </div>
                             <i className="fas fa-trophy text-3xl text-orange-500"></i>
                         </div>
@@ -199,8 +226,8 @@ const TeamAnalytics = ({ teamId, teamName }) => {
             {/* Charts */}
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Activity Timeline */}
-                <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
-                    <h4 className="text-lg font-black text-slate-800 mb-4 flex items-center">
+                <div className={`${cardClass} rounded-2xl p-6 border-2 shadow-lg`}>
+                    <h4 className={`text-lg font-black ${textPrimary} mb-4 flex items-center`}>
                         <i className="fas fa-chart-area ml-2 text-indigo-500"></i>
                         خط زمني للنشاطات
                     </h4>
@@ -210,8 +237,8 @@ const TeamAnalytics = ({ teamId, teamName }) => {
                 </div>
 
                 {/* Member Contributions */}
-                <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
-                    <h4 className="text-lg font-black text-slate-800 mb-4 flex items-center">
+                <div className={`${cardClass} rounded-2xl p-6 border-2 shadow-lg`}>
+                    <h4 className={`text-lg font-black ${textPrimary} mb-4 flex items-center`}>
                         <i className="fas fa-user-chart ml-2 text-indigo-500"></i>
                         مساهمات الأعضاء
                     </h4>
@@ -222,8 +249,8 @@ const TeamAnalytics = ({ teamId, teamName }) => {
             </div>
 
             {/* Top Members */}
-            <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
-                <h4 className="text-lg font-black text-slate-800 mb-4 flex items-center">
+            <div className={`${cardClass} rounded-2xl p-6 border-2 shadow-lg`}>
+                <h4 className={`text-lg font-black ${textPrimary} mb-4 flex items-center`}>
                     <i className="fas fa-medal ml-2 text-yellow-500"></i>
                     الأعضاء الأكثر نشاطاً
                 </h4>
@@ -233,10 +260,10 @@ const TeamAnalytics = ({ teamId, teamName }) => {
                             key={member.id}
                             className={`p-4 rounded-xl border-2 ${
                                 index === 0
-                                    ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-300'
+                                    ? darkMode ? 'bg-yellow-900/30 border-yellow-700' : 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-300'
                                     : index === 1
-                                    ? 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300'
-                                    : 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-300'
+                                    ? darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300'
+                                    : darkMode ? 'bg-orange-900/30 border-orange-700' : 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-300'
                             }`}
                         >
                             <div className="flex items-center gap-3">
@@ -248,8 +275,8 @@ const TeamAnalytics = ({ teamId, teamName }) => {
                                     {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-bold text-slate-800">{member.name}</p>
-                                    <p className="text-sm text-slate-600">{member.activity_count} نشاط</p>
+                                    <p className={`font-bold ${textPrimary}`}>{member.name}</p>
+                                    <p className={`text-sm ${textSecondary}`}>{member.activity_count} نشاط</p>
                                 </div>
                             </div>
                         </div>
@@ -259,8 +286,8 @@ const TeamAnalytics = ({ teamId, teamName }) => {
 
             {/* Recent Achievements */}
             {analytics?.achievements && analytics.achievements.length > 0 && (
-                <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-lg">
-                    <h4 className="text-lg font-black text-slate-800 mb-4 flex items-center">
+                <div className={`${cardClass} rounded-2xl p-6 border-2 shadow-lg`}>
+                    <h4 className={`text-lg font-black ${textPrimary} mb-4 flex items-center`}>
                         <i className="fas fa-star ml-2 text-yellow-500"></i>
                         الإنجازات الأخيرة
                     </h4>
@@ -268,14 +295,18 @@ const TeamAnalytics = ({ teamId, teamName }) => {
                         {analytics.achievements.map((achievement, index) => (
                             <div
                                 key={index}
-                                className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200"
+                                className={`flex items-center gap-3 p-3 rounded-lg border ${
+                                    darkMode 
+                                        ? 'bg-yellow-900/20 border-yellow-800' 
+                                        : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
+                                }`}
                             >
                                 <div className="text-2xl">{achievement.icon || '🏆'}</div>
                                 <div className="flex-1">
-                                    <p className="font-bold text-slate-800">{achievement.title}</p>
-                                    <p className="text-xs text-slate-600">{achievement.description}</p>
+                                    <p className={`font-bold ${textPrimary}`}>{achievement.title}</p>
+                                    <p className={`text-xs ${textSecondary}`}>{achievement.description}</p>
                                 </div>
-                                <span className="text-xs text-slate-400">{achievement.date}</span>
+                                <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-slate-400'}`}>{achievement.date}</span>
                             </div>
                         ))}
                     </div>
