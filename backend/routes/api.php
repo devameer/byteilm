@@ -197,6 +197,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Integrations Routes
     require __DIR__ . '/integrations-routes.php';
 
+    // AI Assistant Routes
+    require __DIR__ . '/ai-assistant-routes.php';
+
     // Media Library Routes
     Route::prefix('media-library')->group(function () {
         Route::get('/videos', [MediaLibraryApiController::class, 'index']);
