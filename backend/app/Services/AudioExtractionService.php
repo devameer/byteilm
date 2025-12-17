@@ -76,20 +76,30 @@ class AudioExtractionService
      */
     private function findExecutable(string $name): ?string
     {
+        // Get environment variables
+        $envPath = env('FFMPEG_PATH');
+        $homePath = getenv('HOME');
+        $currentUser = get_current_user();
+
         // Common paths to check
         $paths = [
-            // Windows
-            "C:\\ffmpeg\\bin\\{$name}.exe",
-            "C:\\Program Files\\ffmpeg\\bin\\{$name}.exe",
-            getenv('FFMPEG_PATH') ?: '',
-            // Linux/Mac
+            // Environment configured path
+            $envPath,
+            // Linux/Mac system paths
             "/usr/bin/{$name}",
             "/usr/local/bin/{$name}",
             "/opt/homebrew/bin/{$name}",
+            // cPanel paths
+            $homePath ? "{$homePath}/bin/{$name}" : null,
+            "/home/{$currentUser}/bin/{$name}",
+            // Windows paths
+            "C:\\ffmpeg\\bin\\{$name}.exe",
+            "C:\\Program Files\\ffmpeg\\bin\\{$name}.exe",
         ];
 
         foreach ($paths as $path) {
             if (!empty($path) && file_exists($path)) {
+                Log::info("Found {$name} at: {$path}");
                 return $path;
             }
         }
@@ -105,6 +115,7 @@ class AudioExtractionService
             }
         }
 
+        Log::warning("Executable {$name} not found in any path");
         return null;
     }
 
