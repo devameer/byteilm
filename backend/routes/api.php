@@ -194,6 +194,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Quiz Routes (AI-Powered Quiz System)
     require __DIR__ . '/quizzes-routes.php';
 
+    // Integrations Routes
+    require __DIR__ . '/integrations-routes.php';
+
     // Media Library Routes
     Route::prefix('media-library')->group(function () {
         Route::get('/videos', [MediaLibraryApiController::class, 'index']);
