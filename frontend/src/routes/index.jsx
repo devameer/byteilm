@@ -38,6 +38,7 @@ const ProductivityReportPage = lazy(() => import("../pages/ProductivityReport"))
 const AIAssistantPage = lazy(() => import("../pages/AIAssistantDashboard"));
 const QuizTakePage = lazy(() => import("../pages/QuizTake"));
 const QuizResultsPage = lazy(() => import("../pages/QuizResults"));
+const QuizAttemptsPage = lazy(() => import("../pages/QuizAttempts"));
 
 export const publicRoutes = [
   { path: "/", element: <LandingPage /> },
@@ -75,6 +76,7 @@ export const privateRoutes = [
   { path: "/integrations", element: <IntegrationsPage /> },
   { path: "/productivity-report", element: <ProductivityReportPage /> },
   { path: "/ai-assistant", element: <AIAssistantPage /> },
+  { path: "/quizzes/:quizId/attempts", element: <QuizAttemptsPage /> },
   { path: "/quizzes/:quizId", element: <QuizTakePage /> },
   { path: "/quiz-results/:attemptId", element: <QuizResultsPage /> },
 ];

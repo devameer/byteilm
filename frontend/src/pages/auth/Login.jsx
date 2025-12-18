@@ -8,8 +8,8 @@ import AuthCard from "../../components/auth/AuthCard";
 
 function Login() {
   const { darkMode } = useTheme();
-  const [email, setEmail] = useState("user@plan.com");
-  const [password, setPassword] = useState("user123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

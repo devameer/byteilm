@@ -22,6 +22,7 @@ const quizApi = {
   saveAnswer: (attemptId, data) => axios.post(`/quiz-attempts/${attemptId}/answer`, data).then(res => res.data),
   submitQuiz: (attemptId) => axios.post(`/quiz-attempts/${attemptId}/submit`).then(res => res.data),
   getResults: (attemptId) => axios.get(`/quiz-attempts/${attemptId}/results`).then(res => res.data),
+  getUserAttempts: (quizId) => axios.get(`/quizzes/${quizId}/attempts`).then(res => res.data),
 };
 
 /**
@@ -53,6 +54,17 @@ export const useQuizResults = (attemptId) => {
     queryKey: quizKeys.results(attemptId),
     queryFn: () => quizApi.getResults(attemptId),
     enabled: !!attemptId,
+  });
+};
+
+/**
+ * Hook to fetch user's attempts for a quiz
+ */
+export const useQuizAttempts = (quizId) => {
+  return useQuery({
+    queryKey: ['quizzes', quizId, 'attempts'],
+    queryFn: () => quizApi.getUserAttempts(quizId),
+    enabled: !!quizId,
   });
 };
 
