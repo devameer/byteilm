@@ -70,85 +70,33 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Cache strategies
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'gstatic-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'images-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              }
-            }
-          },
-          {
-            urlPattern: /^\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5 // 5 minutes
-              },
-              networkTimeoutSeconds: 10
-            }
-          }
-        ],
-        // Pre-cache critical assets
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
+        // Pre-cache فقط الملفات الأساسية
+        globPatterns: ['**/*.{js,css,html,ico}'],
+        // تقليل عدد الملفات المخزنة
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB max
       },
       devOptions: {
         enabled: true // Enable PWA in dev mode for testing
       }
     }),
-    // Gzip compression
+    // Gzip compression - فقط للملفات الكبيرة
     viteCompression({
-      verbose: true,
+      verbose: false, // إخفاء الرسائل
       disable: false,
-      threshold: 10240, // Only compress files larger than 10KB
+      threshold: 100240, // فقط للملفات الأكبر من 100KB
       algorithm: "gzip",
       ext: ".gz",
-      deleteOriginFile: false, // Keep original files
-    }),
-    // Brotli compression (better compression than gzip)
-    viteCompression({
-      verbose: true,
-      disable: false,
-      threshold: 10240,
-      algorithm: "brotliCompress",
-      ext: ".br",
       deleteOriginFile: false,
     }),
+    // تعطيل Brotli compression لتقليل عدد الملفات
+    // viteCompression({
+    //   verbose: false,
+    //   disable: false,
+    //   threshold: 100240,
+    //   algorithm: "brotliCompress",
+    //   ext: ".br",
+    //   deleteOriginFile: false,
+    // }),
   ],
   server: {
     port: 5173,
@@ -171,26 +119,48 @@ export default defineConfig({
   build: {
     outDir: "dist",
     assetsDir: "assets",
-    // Code splitting for better caching
+    // Code splitting محسّن - يحمل فقط ما تحتاجه
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunk for all node_modules
-          vendor: [
-            "react",
-            "react-dom",
-            "react-router-dom",
-          ],
-          // Chart.js in separate chunk
-          charts: ["chart.js", "react-chartjs-2"],
-          // Icons in separate chunk
-          icons: ["@heroicons/react"],
+        manualChunks: (id) => {
+          // دمج المكتبات الكبيرة في ملفات منفصلة
+          if (id.includes('node_modules')) {
+            // مكتبات كبيرة - كل واحدة في ملف منفصل
+            if (id.includes('fullcalendar')) return 'fullcalendar';
+            if (id.includes('chart.js') || id.includes('react-chartjs')) return 'charts';
+            if (id.includes('video.js') || id.includes('react-player')) return 'video';
+
+            // React core - ملف منفصل
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor';
+            }
+
+            // باقي المكتبات في vendor
+            return 'vendor';
+          }
+
+          // ⚠️ لا تدمج الصفحات - دعها تُحمّل عند الطلب (Lazy Loading)
+          // كل صفحة ستكون في ملف منفصل يُحمّل عند زيارتها فقط
+
+          // دمج Components المشتركة فقط
+          if (id.includes('/src/components/') && !id.includes('/pages/')) {
+            return 'components';
+          }
+
+          // Hooks و Services و Contexts - ملف واحد
+          if (id.includes('/src/hooks/') ||
+              id.includes('/src/services/') ||
+              id.includes('/src/contexts/')) {
+            return 'app-core';
+          }
         },
+        // أسماء ملفات مع hash للتخزين المؤقت
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
       },
     },
-    // Optimize chunk size
-    chunkSizeWarningLimit: 1000,
-    // Minification
-    minify: "esbuild", // Changed from terser to esbuild for faster builds
+    chunkSizeWarningLimit: 2000,
+    minify: "esbuild",
   },
 });

@@ -37,7 +37,10 @@
       "Bash(npm install:*)",
       "Bash(find:*)",
       "Bash(composer check:*)",
-      "Bash(composer install:*)"
+      "Bash(composer install:*)",
+      "Bash(npm run build:balanced:*)",
+      "Bash(npm run build:simple:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

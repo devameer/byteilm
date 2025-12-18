@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "vite  --force",
     "build": "vite build",
+    "build:simple": "vite build --config vite.config.simple.js",
+    "build:balanced": "vite build --config vite.config.balanced.js",
+    "build:clean": "rm -rf dist && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

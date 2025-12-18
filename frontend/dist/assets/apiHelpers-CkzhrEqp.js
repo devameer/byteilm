@@ -1,1 +1,0 @@
-const c=n=>{const t={};return Object.keys(n).forEach(e=>{const s=n[e];s!==""&&s!==null&&s!==void 0&&s!=="all"&&(e==="with_stats"||e==="active_courses_only"||e==="is_lesson"?t[e]=s===!0||s==="true"||s===1||s==="1":t[e]=s)}),t};export{c};
