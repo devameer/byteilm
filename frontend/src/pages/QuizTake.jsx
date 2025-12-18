@@ -7,6 +7,13 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { useStartQuiz, useSaveQuizAnswer, useSubmitQuiz } from '../hooks/api';
+import {
+  showError,
+  show403Error,
+  show404Error,
+  confirmQuizSubmit,
+  showTimeExpired
+} from '../utils/sweetAlert';
 
 const QuizTake = () => {
   const { quizId } = useParams();
@@ -57,19 +64,33 @@ const QuizTake = () => {
   const startQuiz = async () => {
     try {
       setLoading(true);
+      console.log('Starting quiz with ID:', quizId);
       const data = await startQuizMutation.mutateAsync(quizId);
+      console.log('Start quiz response:', data);
+
       if (data.success) {
+        console.log('Quiz started successfully. Attempt ID:', data.data.attempt_id);
         setAttempt(data.data);
         setQuiz(data.data.quiz);
         setQuestions(data.data.questions);
         setTimeRemaining(data.data.remaining_time);
       } else {
-        alert(data.message);
+        console.error('Quiz start failed:', data.message);
+        await showError(data.message, 'فشل بدء الاختبار');
         navigate(-1);
       }
     } catch (error) {
       console.error('Error starting quiz:', error);
-      alert('فشل بدء الاختبار: ' + (error.response?.data?.message || error.message));
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      await showError(
+        error.response?.data?.message || error.message,
+        'فشل بدء الاختبار'
+      );
+      navigate(-1);
     } finally {
       setLoading(false);
     }
@@ -86,6 +107,21 @@ const QuizTake = () => {
   const saveAnswer = async (questionId, answer) => {
     const timeSpent = Math.floor((Date.now() - questionStartTime) / 1000);
 
+    // التحقق من وجود attempt صحيح
+    if (!attempt || !attempt.attempt_id) {
+      console.error('No valid attempt found. Attempt:', attempt);
+      await showError('لا يوجد اختبار نشط. يرجى إعادة المحاولة.', 'خطأ');
+      navigate(-1);
+      return;
+    }
+
+    console.log('Saving answer:', {
+      attemptId: attempt.attempt_id,
+      questionId,
+      answer,
+      timeSpent
+    });
+
     try {
       await saveAnswerMutation.mutateAsync({
         attemptId: attempt.attempt_id,
@@ -95,6 +131,27 @@ const QuizTake = () => {
       });
     } catch (error) {
       console.error('Error saving answer:', error);
+
+      // معالجة خطأ 403 (ليس لديك صلاحية)
+      if (error.response?.status === 403) {
+        await show403Error();
+        navigate(`/quizzes/${quizId}`);
+      }
+      // معالجة خطأ 404 (الاختبار غير موجود)
+      else if (error.response?.status === 404) {
+        await show404Error();
+        navigate(`/quizzes/${quizId}`);
+      }
+      // أخطاء أخرى
+      else {
+        const errorMsg = error.response?.data?.message || error.message || 'فشل حفظ الإجابة';
+        console.error('Save answer error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: errorMsg
+        });
+        // لا نوقف الاختبار للأخطاء العادية - فقط نسجل
+      }
     }
   };
 
@@ -120,10 +177,10 @@ const QuizTake = () => {
   const handleSubmit = async () => {
     const unansweredCount = questions.length - Object.keys(answers).length;
 
-    if (unansweredCount > 0) {
-      if (!confirm(`لديك ${unansweredCount} أسئلة لم تجب عليها. هل أنت متأكد من التسليم؟`)) {
-        return;
-      }
+    // تأكيد التسليم
+    const result = await confirmQuizSubmit(unansweredCount);
+    if (!result.isConfirmed) {
+      return;
     }
 
     // Save current answer if exists
@@ -141,14 +198,17 @@ const QuizTake = () => {
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
-      alert('فشل تسليم الاختبار: ' + (error.response?.data?.message || error.message));
+      await showError(
+        error.response?.data?.message || error.message,
+        'فشل تسليم الاختبار'
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleAutoSubmit = async () => {
-    alert('انتهى وقت الاختبار. سيتم تسليم إجاباتك تلقائياً.');
+    await showTimeExpired();
     await handleSubmit();
   };
 

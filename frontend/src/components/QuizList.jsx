@@ -11,6 +11,13 @@ import {
   TrashIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import {
+  showSuccess,
+  showError,
+  confirmDeleteQuiz,
+  showAIQuizGenerating,
+  closeLoading
+} from '../utils/sweetAlert';
 
 const QuizList = ({ lessonId, isInstructor = false }) => {
   const navigate = useNavigate();
@@ -45,26 +52,36 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
 
   const handleGenerateQuiz = async () => {
     try {
+      showAIQuizGenerating();
       await generateQuizMutation.mutateAsync({ lessonId, options: generateOptions });
-      alert('تم إنشاء الاختبار بنجاح باستخدام الذكاء الاصطناعي!');
+      closeLoading();
+      await showSuccess('تم إنشاء الاختبار بنجاح باستخدام الذكاء الاصطناعي!', 'نجح!');
       setShowGenerateModal(false);
     } catch (error) {
       console.error('Error generating quiz:', error);
-      alert('فشل إنشاء الاختبار: ' + (error.response?.data?.message || error.message));
+      closeLoading();
+      await showError(
+        error.response?.data?.message || error.message || 'حدث خطأ غير متوقع',
+        'فشل إنشاء الاختبار'
+      );
     }
   };
 
   const handleDeleteQuiz = async (quizId) => {
-    if (!confirm('هل أنت متأكد من حذف هذا الاختبار؟')) {
+    const result = await confirmDeleteQuiz();
+    if (!result.isConfirmed) {
       return;
     }
 
     try {
       await deleteQuizMutation.mutateAsync(quizId);
-      alert('تم حذف الاختبار بنجاح');
+      await showSuccess('تم حذف الاختبار بنجاح', 'نجح!');
     } catch (error) {
       console.error('Error deleting quiz:', error);
-      alert('فشل حذف الاختبار');
+      await showError(
+        error.response?.data?.message || error.message || 'حدث خطأ غير متوقع',
+        'فشل حذف الاختبار'
+      );
     }
   };
 
