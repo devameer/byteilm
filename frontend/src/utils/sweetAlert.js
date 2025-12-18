@@ -1,16 +1,34 @@
 import Swal from 'sweetalert2';
 
 /**
- * SweetAlert2 Wrapper مع إعدادات مخصصة بالعربية
+ * SweetAlert2 Wrapper مع إعدادات مخصصة بالعربية ودعم Dark Mode
  */
 
-// الإعدادات الافتراضية
-const defaultOptions = {
-  confirmButtonColor: '#3b82f6',
-  cancelButtonColor: '#ef4444',
-  confirmButtonText: 'حسناً',
-  cancelButtonText: 'إلغاء',
-  reverseButtons: true, // لجعل زر الإلغاء على اليسار (مناسب للعربية)
+// دالة للتحقق من Dark Mode
+const isDarkMode = () => {
+  return document.documentElement.classList.contains('dark') ||
+         localStorage.theme === 'dark' ||
+         (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+};
+
+// الإعدادات الافتراضية مع دعم Dark Mode
+const getDefaultOptions = () => {
+  const dark = isDarkMode();
+
+  return {
+    confirmButtonColor: '#3b82f6',
+    cancelButtonColor: '#ef4444',
+    confirmButtonText: 'حسناً',
+    cancelButtonText: 'إلغاء',
+    reverseButtons: true,
+    background: dark ? '#1f2937' : '#ffffff',
+    color: dark ? '#f9fafb' : '#111827',
+    customClass: {
+      popup: dark ? 'swal2-dark' : '',
+      title: dark ? 'text-gray-100' : 'text-gray-900',
+      htmlContainer: dark ? 'text-gray-300' : 'text-gray-600',
+    }
+  };
 };
 
 /**
@@ -21,7 +39,7 @@ export const showSuccess = (message, title = 'نجح!') => {
     icon: 'success',
     title,
     text: message,
-    ...defaultOptions,
+    ...getDefaultOptions(),
   });
 };
 
@@ -33,7 +51,7 @@ export const showError = (message, title = 'خطأ!') => {
     icon: 'error',
     title,
     text: message,
-    ...defaultOptions,
+    ...getDefaultOptions(),
   });
 };
 
@@ -45,7 +63,7 @@ export const showWarning = (message, title = 'تحذير!') => {
     icon: 'warning',
     title,
     text: message,
-    ...defaultOptions,
+    ...getDefaultOptions(),
   });
 };
 
@@ -57,7 +75,7 @@ export const showInfo = (message, title = 'معلومة') => {
     icon: 'info',
     title,
     text: message,
-    ...defaultOptions,
+    ...getDefaultOptions(),
   });
 };
 
@@ -72,7 +90,7 @@ export const showConfirm = (message, title = 'هل أنت متأكد؟') => {
     showCancelButton: true,
     confirmButtonText: 'نعم',
     cancelButtonText: 'لا',
-    ...defaultOptions,
+    ...getDefaultOptions(),
   });
 };
 
@@ -83,6 +101,7 @@ export const showLoading = (message = 'جاري التحميل...') => {
   return Swal.fire({
     title: message,
     allowOutsideClick: false,
+    ...getDefaultOptions(),
     didOpen: () => {
       Swal.showLoading();
     },
@@ -100,6 +119,8 @@ export const closeLoading = () => {
  * رسالة مع timer (تختفي تلقائياً)
  */
 export const showToast = (message, icon = 'success', timer = 3000) => {
+  const dark = isDarkMode();
+
   return Swal.fire({
     toast: true,
     position: 'top-end',
@@ -108,6 +129,8 @@ export const showToast = (message, icon = 'success', timer = 3000) => {
     showConfirmButton: false,
     timer,
     timerProgressBar: true,
+    background: dark ? '#1f2937' : '#ffffff',
+    color: dark ? '#f9fafb' : '#111827',
   });
 };
 
@@ -124,6 +147,7 @@ export const show403Error = () => {
     `,
     confirmButtonText: 'حسناً',
     confirmButtonColor: '#3b82f6',
+    ...getDefaultOptions(),
   });
 };
 
@@ -140,6 +164,7 @@ export const show404Error = () => {
     `,
     confirmButtonText: 'حسناً',
     confirmButtonColor: '#3b82f6',
+    ...getDefaultOptions(),
   });
 };
 
@@ -147,6 +172,8 @@ export const show404Error = () => {
  * تأكيد تسليم الاختبار
  */
 export const confirmQuizSubmit = (unansweredCount) => {
+  const baseOptions = getDefaultOptions();
+
   if (unansweredCount > 0) {
     return Swal.fire({
       icon: 'warning',
@@ -161,6 +188,7 @@ export const confirmQuizSubmit = (unansweredCount) => {
       confirmButtonColor: '#10b981',
       cancelButtonColor: '#6b7280',
       reverseButtons: true,
+      ...baseOptions,
     });
   } else {
     return Swal.fire({
@@ -173,6 +201,7 @@ export const confirmQuizSubmit = (unansweredCount) => {
       confirmButtonColor: '#10b981',
       cancelButtonColor: '#6b7280',
       reverseButtons: true,
+      ...baseOptions,
     });
   }
 };
@@ -188,6 +217,7 @@ export const showTimeExpired = () => {
     confirmButtonText: 'حسناً',
     confirmButtonColor: '#3b82f6',
     allowOutsideClick: false,
+    ...getDefaultOptions(),
   });
 };
 
@@ -205,6 +235,7 @@ export const confirmDeleteQuiz = () => {
     confirmButtonColor: '#ef4444',
     cancelButtonColor: '#6b7280',
     reverseButtons: true,
+    ...getDefaultOptions(),
   });
 };
 
@@ -218,10 +249,11 @@ export const showAIQuizGenerating = () => {
     html: `
       <p>يتم استخدام الذكاء الاصطناعي <strong>Gemini</strong></p>
       <p>لتوليد أسئلة ذكية بناءً على محتوى الدرس</p>
-      <p class="text-sm text-gray-500 mt-2">قد يستغرق هذا بضع ثوانٍ...</p>
+      <p class="text-sm opacity-75 mt-2">قد يستغرق هذا بضع ثوانٍ...</p>
     `,
     allowOutsideClick: false,
     showConfirmButton: false,
+    ...getDefaultOptions(),
     didOpen: () => {
       Swal.showLoading();
     },

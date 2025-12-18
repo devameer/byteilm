@@ -39,6 +39,7 @@ const AIAssistantPage = lazy(() => import("../pages/AIAssistantDashboard"));
 const QuizTakePage = lazy(() => import("../pages/QuizTake"));
 const QuizResultsPage = lazy(() => import("../pages/QuizResults"));
 const QuizAttemptsPage = lazy(() => import("../pages/QuizAttempts"));
+const LogViewerPage = lazy(() => import("../pages/LogViewer"));
 
 export const publicRoutes = [
   { path: "/", element: <LandingPage /> },
@@ -79,4 +80,5 @@ export const privateRoutes = [
   { path: "/quizzes/:quizId/attempts", element: <QuizAttemptsPage /> },
   { path: "/quizzes/:quizId", element: <QuizTakePage /> },
   { path: "/quiz-results/:attemptId", element: <QuizResultsPage /> },
+  { path: "/logs", element: <LogViewerPage /> },
 ];

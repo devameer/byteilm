@@ -206,6 +206,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Reports Routes
     require __DIR__ . '/reports-routes.php';
 
+    // Log Viewer Routes
+    Route::prefix('logs')->group(function () {
+        Route::get('/', [App\Http\Controllers\LogViewerController::class, 'index']);
+        Route::get('/dates', [App\Http\Controllers\LogViewerController::class, 'getDates']);
+        Route::get('/download', [App\Http\Controllers\LogViewerController::class, 'download']);
+        Route::delete('/clear', [App\Http\Controllers\LogViewerController::class, 'clear']);
+    });
+
     // Analytics Routes
     require __DIR__ . '/analytics-routes.php';
 

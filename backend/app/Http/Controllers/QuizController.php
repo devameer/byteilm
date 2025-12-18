@@ -312,11 +312,31 @@ class QuizController extends Controller
         $attempt = QuizAttempt::findOrFail($attemptId);
         $user = Auth::user();
 
+        // Log for debugging
+        \Log::info('QuizController@submitAnswer', [
+            'attempt_id' => $attemptId,
+            'attempt_user_id' => $attempt->user_id,
+            'authenticated_user_id' => $user->id,
+            'authenticated_user_email' => $user->email,
+            'question_id' => $request->question_id
+        ]);
+
         // Verify ownership
         if ($attempt->user_id !== $user->id) {
+            \Log::warning('Attempt ownership mismatch', [
+                'attempt_id' => $attemptId,
+                'attempt_user_id' => $attempt->user_id,
+                'authenticated_user_id' => $user->id
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'غير مصرح لك بهذا الإجراء'
+                'message' => 'هذه المحاولة لا تنتمي لحسابك. يرجى بدء محاولة جديدة.',
+                'error' => 'attempt_ownership_mismatch',
+                'details' => [
+                    'attempt_user_id' => $attempt->user_id,
+                    'current_user_id' => $user->id
+                ]
             ], 403);
         }
 
