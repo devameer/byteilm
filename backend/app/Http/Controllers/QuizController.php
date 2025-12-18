@@ -361,7 +361,7 @@ class QuizController extends Controller
         $question = QuizQuestion::findOrFail($request->question_id);
 
         // Check if question belongs to this quiz
-        if ($question->quiz_id !== $attempt->quiz_id) {
+        if ((int) $question->quiz_id !== (int) $attempt->quiz_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'السؤال لا ينتمي لهذا الاختبار'
@@ -412,7 +412,7 @@ class QuizController extends Controller
         $user = Auth::user();
 
         // Verify ownership
-        if ($attempt->user_id !== $user->id) {
+        if ((int) $attempt->user_id !== (int) $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'غير مصرح لك بهذا الإجراء'
@@ -447,7 +447,7 @@ class QuizController extends Controller
         $user = Auth::user();
 
         // Verify ownership
-        if ($attempt->user_id !== $user->id) {
+        if ((int) $attempt->user_id !== (int) $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'غير مصرح لك بهذا الإجراء'
@@ -510,7 +510,7 @@ class QuizController extends Controller
         $user = Auth::user();
 
         // Check if user is instructor/owner
-        if ($quiz->lesson->course->user_id !== $user->id) {
+        if ((int) $quiz->lesson->course->user_id !== (int) $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'غير مصرح لك بحذف هذا الاختبار'
