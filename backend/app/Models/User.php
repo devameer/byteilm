@@ -321,4 +321,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(AITaskPriority::class);
     }
+
+    /**
+     * Quiz attempts by the user.
+     */
+    public function quizAttempts()
+    {
+        return $this->hasMany(QuizAttempt::class);
+    }
+
+    /**
+     * Enrollments for the user.
+     */
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
 }
