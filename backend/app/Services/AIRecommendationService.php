@@ -10,7 +10,6 @@ use App\Models\LearningInsight;
 use App\Models\StudyTimeRecommendation;
 use App\Models\AITaskPriority;
 use App\Models\Enrollment;
-use App\Models\Progress;
 use App\Models\PageView;
 use App\Models\UserEvent;
 use Illuminate\Support\Facades\DB;
@@ -147,9 +146,11 @@ class AIRecommendationService
         // Courses with most enrollments in last 30 days
         return Course::where('is_published', true)
             ->whereNotIn('id', $excludeCourseIds)
-            ->withCount(['enrollments as recent_enrollments' => function ($query) {
-                $query->where('created_at', '>=', now()->subDays(30));
-            }])
+            ->withCount([
+                'enrollments as recent_enrollments' => function ($query) {
+                    $query->where('created_at', '>=', now()->subDays(30));
+                }
+            ])
             ->having('recent_enrollments', '>', 0)
             ->orderBy('recent_enrollments', 'desc')
             ->limit(10)
@@ -413,10 +414,12 @@ class AIRecommendationService
                 $enrolledCourseIds = $user->enrollments()->pluck('course_id');
                 $query->whereIn('course_id', $enrolledCourseIds);
             })
-            ->with(['enrollments' => function ($query) use ($user) {
-                $enrolledCourseIds = $user->enrollments()->pluck('course_id');
-                $query->whereIn('course_id', $enrolledCourseIds);
-            }])
+            ->with([
+                'enrollments' => function ($query) use ($user) {
+                    $enrolledCourseIds = $user->enrollments()->pluck('course_id');
+                    $query->whereIn('course_id', $enrolledCourseIds);
+                }
+            ])
             ->limit($limit * 2)
             ->get();
 
@@ -486,7 +489,9 @@ class AIRecommendationService
      */
     protected function analyzeProgress(User $user)
     {
-        $recentProgress = Progress::where('user_id', $user->id)
+        // Count recently completed lessons
+        $recentProgress = $user->lessons()
+            ->where('completed', true)
             ->where('updated_at', '>=', now()->subDays(7))
             ->count();
 
