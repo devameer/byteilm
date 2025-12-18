@@ -19,7 +19,7 @@ const LogViewer = () => {
   const [filters, setFilters] = useState({
     level: '',
     search: '',
-    date: new Date().toISOString().split('T')[0],
+    date: 'current',
     limit: 100
   });
   const [stats, setStats] = useState({ total: 0, file: '', size: '' });

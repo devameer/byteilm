@@ -18,7 +18,7 @@ class LogViewerController extends Controller
             'level' => 'nullable|in:emergency,alert,critical,error,warning,notice,info,debug',
             'search' => 'nullable|string',
             'limit' => 'nullable|integer|min:10|max:1000',
-            'date' => 'nullable|date_format:Y-m-d'
+            'date' => 'nullable|string'
         ]);
 
         $level = $request->input('level');
@@ -26,20 +26,31 @@ class LogViewerController extends Controller
         $limit = $request->input('limit', 100);
         $date = $request->input('date', now()->format('Y-m-d'));
 
-        // Get log file path
-        $logFile = storage_path("logs/laravel-{$date}.log");
+        // Determine log file path
+        if ($date && $date !== 'current' && $date !== now()->format('Y-m-d')) {
+            // Historical log file
+            $logFile = storage_path("logs/laravel-{$date}.log");
+        } else {
+            // Current log file
+            $logFile = storage_path('logs/laravel.log');
+        }
 
         if (!File::exists($logFile)) {
-            // Try today's log
-            $logFile = storage_path('logs/laravel.log');
-
-            if (!File::exists($logFile)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'لا توجد سجلات متاحة لهذا التاريخ',
-                    'data' => []
-                ]);
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'لا توجد سجلات متاحة لهذا التاريخ',
+                'data' => [
+                    'logs' => [],
+                    'total' => 0,
+                    'file' => basename($logFile),
+                    'size' => '0 B',
+                    'filters' => [
+                        'level' => $level,
+                        'search' => $search,
+                        'date' => $date
+                    ]
+                ]
+            ]);
         }
 
         // Read log file
@@ -104,9 +115,13 @@ class LogViewerController extends Controller
     public function download(Request $request)
     {
         $date = $request->input('date', now()->format('Y-m-d'));
-        $logFile = storage_path("logs/laravel-{$date}.log");
 
-        if (!File::exists($logFile)) {
+        // Determine log file path
+        if ($date && $date !== 'current' && $date !== now()->format('Y-m-d')) {
+            // Historical log file
+            $logFile = storage_path("logs/laravel-{$date}.log");
+        } else {
+            // Current log file
             $logFile = storage_path('logs/laravel.log');
         }
 
@@ -128,18 +143,22 @@ class LogViewerController extends Controller
     {
         $date = $request->input('date');
 
-        if ($date) {
+        // Determine log file path
+        if ($date && $date !== 'current' && $date !== now()->format('Y-m-d')) {
+            // Historical log file
             $logFile = storage_path("logs/laravel-{$date}.log");
         } else {
+            // Current log file
             $logFile = storage_path('logs/laravel.log');
         }
 
         if (File::exists($logFile)) {
-            File::delete($logFile);
+            // Clear file content instead of deleting (better for production)
+            File::put($logFile, '');
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم مسح السجل بنجاح'
+                'message' => 'تم تنظيف السجل بنجاح'
             ]);
         }
 
