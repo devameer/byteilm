@@ -322,7 +322,7 @@ class QuizController extends Controller
         ]);
 
         // Verify ownership
-        if (Number($attempt->user_id) !== Number($user->id)) {
+        if ((int) $attempt->user_id !== (int) $user->id) {
             \Log::warning('Attempt ownership mismatch', [
                 'attempt_id' => $attemptId,
                 'attempt_user_id' => $attempt->user_id,
