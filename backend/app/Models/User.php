@@ -279,4 +279,46 @@ class User extends Authenticatable
     {
         return $this->hasMany(Subscription::class);
     }
+
+    // ==================== AI Features Relationships ====================
+
+    /**
+     * AI conversations for the user.
+     */
+    public function aiConversations()
+    {
+        return $this->hasMany(AIConversation::class);
+    }
+
+    /**
+     * AI recommendations for the user.
+     */
+    public function aiRecommendations()
+    {
+        return $this->hasMany(AIRecommendation::class);
+    }
+
+    /**
+     * Study time recommendations for the user.
+     */
+    public function studyTimeRecommendations()
+    {
+        return $this->hasMany(StudyTimeRecommendation::class);
+    }
+
+    /**
+     * Learning insights for the user.
+     */
+    public function learningInsights()
+    {
+        return $this->hasMany(LearningInsight::class);
+    }
+
+    /**
+     * AI task priorities for the user.
+     */
+    public function aiTaskPriorities()
+    {
+        return $this->hasMany(AITaskPriority::class);
+    }
 }
