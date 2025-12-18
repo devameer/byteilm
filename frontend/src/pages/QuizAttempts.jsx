@@ -44,6 +44,23 @@ const QuizAttempts = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8" dir="rtl">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-red-800 dark:text-red-200 mb-2">حدث خطأ</h2>
+          <p className="text-red-700 dark:text-red-300">{error.message || 'فشل تحميل المحاولات'}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          >
+            العودة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8" dir="rtl">
       {/* Header */}

@@ -33,6 +33,16 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
   const quizzes = quizzesResponse?.data || [];
   const generating = generateQuizMutation.isPending;
 
+  // Debug: Log quiz data to check user_attempts
+  React.useEffect(() => {
+    if (quizzes.length > 0) {
+      console.log('Quizzes data:', quizzes);
+      quizzes.forEach(quiz => {
+        console.log(`Quiz ${quiz.id}: user_attempts = ${quiz.user_attempts}, can_take = ${quiz.can_take}`);
+      });
+    }
+  }, [quizzes]);
+
   const handleGenerateQuiz = async () => {
     try {
       await generateQuizMutation.mutateAsync({ lessonId, options: generateOptions });
@@ -221,8 +231,13 @@ const QuizList = ({ lessonId, isInstructor = false }) => {
 
                 {quiz.user_attempts > 0 && (
                   <button
-                    onClick={() => navigate(`/quizzes/${quiz.id}/attempts`)}
-                    className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 transition"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Navigating to attempts for quiz:', quiz.id);
+                      navigate(`/quizzes/${quiz.id}/attempts`);
+                    }}
+                    className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 transition cursor-pointer"
                   >
                     عرض المحاولات ({quiz.user_attempts})
                   </button>
