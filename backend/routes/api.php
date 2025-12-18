@@ -200,6 +200,21 @@ Route::middleware('auth:sanctum')->group(function () {
     // AI Assistant Routes
     require __DIR__ . '/ai-assistant-routes.php';
 
+    // Goals Routes
+    require __DIR__ . '/goals-routes.php';
+
+    // Reports Routes
+    require __DIR__ . '/reports-routes.php';
+
+    // Analytics Routes
+    require __DIR__ . '/analytics-routes.php';
+
+    // Performance Routes
+    require __DIR__ . '/performance-routes.php';
+
+    // Comments Routes
+    require __DIR__ . '/comments-routes.php';
+
     // Media Library Routes
     Route::prefix('media-library')->group(function () {
         Route::get('/videos', [MediaLibraryApiController::class, 'index']);

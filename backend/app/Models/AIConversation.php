@@ -9,6 +9,11 @@ class AIConversation extends Model
 {
     use HasFactory;
 
+    /**
+     * The table associated with the model.
+     */
+    protected $table = 'ai_conversations';
+
     protected $fillable = [
         'user_id',
         'title',

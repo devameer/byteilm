@@ -9,6 +9,11 @@ class AIRecommendation extends Model
 {
     use HasFactory;
 
+    /**
+     * The table associated with the model.
+     */
+    protected $table = 'ai_recommendations';
+
     protected $fillable = [
         'user_id',
         'type',
