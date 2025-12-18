@@ -132,15 +132,23 @@ const QuizTake = () => {
     } catch (error) {
       console.error('Error saving answer:', error);
 
-      // معالجة خطأ 403 (ليس لديك صلاحية)
-      if (error.response?.status === 403) {
-        await show403Error();
-        navigate(`/quizzes/${quizId}`);
-      }
-      // معالجة خطأ 404 (الاختبار غير موجود)
-      else if (error.response?.status === 404) {
-        await show404Error();
-        navigate(`/quizzes/${quizId}`);
+      // معالجة خطأ 403 (ليس لديك صلاحية) أو 404 (المحاولة غير موجودة)
+      if (error.response?.status === 403 || error.response?.status === 404) {
+        const errorMsg = error.response?.status === 403
+          ? 'هذه المحاولة لا تنتمي لحسابك أو انتهت صلاحيتها'
+          : 'المحاولة غير موجودة';
+
+        console.error(`${error.response?.status} Error:`, errorMsg);
+        console.error('Attempt details:', attempt);
+        console.error('This usually means the attempt was deleted or is from a previous session.');
+
+        await showError(
+          `${errorMsg}\n\nسيتم إعادة بدء الاختبار من جديد...`,
+          `خطأ ${error.response?.status}`
+        );
+
+        // إعادة بدء الاختبار من جديد
+        window.location.reload();
       }
       // أخطاء أخرى
       else {
