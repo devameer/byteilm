@@ -529,9 +529,8 @@ class AIRecommendationService
     {
         $loginDays = PageView::where('user_id', $user->id)
             ->where('viewed_at', '>=', now()->subDays(30))
-            ->select(DB::raw('DATE(viewed_at) as date'))
-            ->groupBy('date')
-            ->count();
+            ->selectRaw('COUNT(DISTINCT DATE(viewed_at)) as days_count')
+            ->value('days_count') ?? 0;
 
         if ($loginDays >= 20) {
             return LearningInsight::create([
