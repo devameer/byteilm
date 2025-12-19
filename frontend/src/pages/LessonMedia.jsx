@@ -552,7 +552,7 @@ export default function LessonMedia() {
                             {!lesson.summary && (
                                 <button
                                     onClick={() => setActiveTab("summary")}
-                                    className="w-full px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
+                                    className="w-full px-4 py-2 bg-purple-500 text-light rounded hover:bg-purple-600 text-sm"
                                 >
                                     إضافة ملخص
                                 </button>

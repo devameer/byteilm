@@ -32,6 +32,7 @@
             ['route' => 'admin.users.index', 'label' => 'المستخدمون', 'icon' => 'fa-users'],
             ['route' => 'admin.subscriptions.index', 'label' => 'الاشتراكات', 'icon' => 'fa-rotate'],
             ['route' => 'admin.plans.index', 'label' => 'الباقات', 'icon' => 'fa-layer-group'],
+            ['route' => 'admin.usage.index', 'label' => 'إحصائيات الاستخدام', 'icon' => 'fa-chart-pie'],
             ['route' => 'admin.payments.index', 'label' => 'المدفوعات', 'icon' => 'fa-credit-card'],
             ['route' => 'admin.content.index', 'label' => 'المحتوى', 'icon' => 'fa-book'],
             ['route' => 'admin.analytics.index', 'label' => 'التقارير', 'icon' => 'fa-chart-line'],

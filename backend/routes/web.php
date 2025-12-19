@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\UsageStatisticsController;
 use App\Http\Controllers\Support\FaqController as SupportFaqController;
 use App\Http\Controllers\Support\TicketController as SupportTicketController;
 use Illuminate\Support\Facades\Route;
@@ -148,6 +149,8 @@ Route::middleware(['auth', 'admin'])
         Route::delete('/teams/{team}/members/{member}', [TeamController::class, 'destroyMember'])->name('teams.members.destroy');
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::get('/usage', [UsageStatisticsController::class, 'index'])->name('usage.index');
+        Route::get('/usage/{user}', [UsageStatisticsController::class, 'show'])->name('usage.show');
     });
 
 Route::middleware('auth')->prefix('support-center')->name('support.')->group(function () {

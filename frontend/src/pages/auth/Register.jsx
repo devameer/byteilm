@@ -83,7 +83,7 @@ function Register() {
       );
 
       if (response.success) {
-        navigate("/dashboard");
+        navigate("/pricing");
       }
     } catch (err) {
       const message =

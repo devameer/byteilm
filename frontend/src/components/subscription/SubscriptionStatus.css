@@ -1,0 +1,266 @@
+.subscription-status-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.2s;
+}
+
+.subscription-status-card.active {
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.subscription-status-card.canceled {
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.subscription-status-card.no-plan {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05) 0%, var(--bg-card) 100%);
+    border-color: rgba(var(--primary-rgb), 0.2);
+}
+
+/* Header */
+.status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.status-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.active,
+.status-badge.trialing {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.status-badge.canceled {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.status-badge.expired {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* Content */
+.status-content {
+    margin-bottom: 1rem;
+}
+
+.plan-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.no-plan-text {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.upgrade-hint {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.status-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+}
+
+.detail-row span {
+    color: var(--text-secondary);
+}
+
+.detail-row strong {
+    color: var(--text-primary);
+}
+
+.detail-row.warning strong {
+    color: #f59e0b;
+}
+
+.days-remaining {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    margin-top: 0.25rem;
+}
+
+/* Actions */
+.status-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.upgrade-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.upgrade-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+}
+
+.cancel-btn,
+.resume-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.resume-btn {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.resume-btn:hover {
+    background: #10b981;
+    color: white;
+}
+
+.resume-btn:disabled,
+.confirm-yes:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.change-plan-link {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.change-plan-link:hover {
+    color: var(--primary-color);
+}
+
+/* Confirm Cancel */
+.confirm-cancel {
+    text-align: center;
+}
+
+.confirm-cancel p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.confirm-yes,
+.confirm-no {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.confirm-yes {
+    background: #ef4444;
+    border: none;
+    color: white;
+}
+
+.confirm-yes:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.confirm-no {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.confirm-no:hover {
+    background: var(--bg-secondary);
+}
+
+/* Skeleton */
+.subscription-status-card.skeleton {
+    min-height: 150px;
+}
+
+.skeleton-header,
+.skeleton-content {
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-header {
+    height: 20px;
+    width: 60%;
+    margin-bottom: 1rem;
+}
+
+.skeleton-content {
+    height: 60px;
+    width: 100%;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}

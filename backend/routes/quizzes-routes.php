@@ -18,8 +18,9 @@ Route::prefix('lessons/{lessonId}')->group(function () {
     // Get all quizzes for a lesson
     Route::get('/quizzes', [QuizController::class, 'index']);
 
-    // Generate quiz using AI
-    Route::post('/quizzes/generate', [QuizController::class, 'generateWithAI']);
+    // Generate quiz using AI (with usage limit check)
+    Route::post('/quizzes/generate', [QuizController::class, 'generateWithAI'])
+        ->middleware('usage.limit:quiz_generation');
 
     // Create quiz manually
     Route::post('/quizzes', [QuizController::class, 'store']);

@@ -59,6 +59,20 @@ use App\Http\Controllers\Api\FileAttachmentController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\MediaProxyController;
+use App\Http\Controllers\Api\PlanApiController;
+use App\Http\Controllers\Api\CheckoutApiController;
+use App\Http\Controllers\Api\SubscriptionApiController;
+use App\Http\Controllers\Api\WebhookController;
+
+// Public Plans Routes (no authentication required for browsing plans)
+Route::prefix('plans')->group(function () {
+    Route::get('/', [PlanApiController::class, 'index']); // List all active plans
+    Route::get('/{id}', [PlanApiController::class, 'show']); // Get single plan details
+    Route::get('/compare/all', [PlanApiController::class, 'compare']); // Compare all plans
+});
+
+// Stripe Webhook (no auth - verified by signature)
+Route::post('/webhooks/stripe', [WebhookController::class, 'stripe']);
 
 // Media Proxy Routes (public - with CORS support for video streaming)
 Route::prefix('media')->group(function () {
@@ -162,7 +176,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Lesson Video Routes
     Route::prefix('lessons/{lesson}')->group(function () {
-        Route::post('/video', [LessonVideoApiController::class, 'upload']);
+        Route::post('/video', [LessonVideoApiController::class, 'upload'])
+            ->middleware(['usage.limit:video_upload', 'usage.limit:storage']);
         Route::get('/video', [LessonVideoApiController::class, 'show']);
         Route::get('/video/stream', [LessonVideoApiController::class, 'stream']);
         Route::put('/video', [LessonVideoApiController::class, 'update']);
@@ -171,24 +186,31 @@ Route::middleware('auth:sanctum')->group(function () {
         // Chunked Upload Routes
         Route::post('/video/chunked/start', [LessonVideoApiController::class, 'startChunkedUpload']);
         Route::post('/video/chunked/{uploadId}/chunk', [LessonVideoApiController::class, 'uploadChunk']);
-        Route::post('/video/chunked/{uploadId}/complete', [LessonVideoApiController::class, 'completeChunkedUpload']);
+        Route::post('/video/chunked/{uploadId}/complete', [LessonVideoApiController::class, 'completeChunkedUpload'])
+            ->middleware(['usage.limit:video_upload', 'usage.limit:storage']);
         Route::get('/video/chunked/{uploadId}/status', [LessonVideoApiController::class, 'getUploadStatus']);
         Route::delete('/video/chunked/{uploadId}', [LessonVideoApiController::class, 'cancelChunkedUpload']);
-        Route::post('/video/youtube', [LessonVideoApiController::class, 'importFromYoutube']);
+        Route::post('/video/youtube', [LessonVideoApiController::class, 'importFromYoutube'])
+            ->middleware(['usage.limit:video_upload', 'usage.limit:storage']);
 
         // Subtitle Routes
         Route::post('/video/subtitles', [LessonSubtitleApiController::class, 'upload']);
         Route::get('/video/subtitles', [LessonSubtitleApiController::class, 'index']);
 
         // Subtitle Generation Routes (AI-powered)
-        Route::post('/video/transcribe', [LessonSubtitleApiController::class, 'transcribe']);
-        Route::post('/video/transcribe/start', [LessonSubtitleApiController::class, 'startTranscription']); // Async start
-        Route::get('/video/transcribe/status', [LessonSubtitleApiController::class, 'getTranscriptionStatus']); // Polling status
-        Route::post('/video/translate-arabic', [LessonSubtitleApiController::class, 'translateToArabic']); // Kept for backward compatibility
-        Route::post('/video/translate', [LessonSubtitleApiController::class, 'translate']); // New: translate to any language
-        Route::post('/video/detect-language', [LessonSubtitleApiController::class, 'detectLanguage']); // New: detect language
+        Route::post('/video/transcribe', [LessonSubtitleApiController::class, 'transcribe'])
+            ->middleware('usage.limit:video_transcription');
+        Route::post('/video/transcribe/start', [LessonSubtitleApiController::class, 'startTranscription'])
+            ->middleware('usage.limit:video_transcription');
+        Route::get('/video/transcribe/status', [LessonSubtitleApiController::class, 'getTranscriptionStatus']);
+        Route::post('/video/translate-arabic', [LessonSubtitleApiController::class, 'translateToArabic'])
+            ->middleware('usage.limit:text_translation');
+        Route::post('/video/translate', [LessonSubtitleApiController::class, 'translate'])
+            ->middleware('usage.limit:text_translation');
+        Route::post('/video/detect-language', [LessonSubtitleApiController::class, 'detectLanguage']);
         Route::post('/video/save-as-subtitle', [LessonSubtitleApiController::class, 'saveAsSubtitle']);
-        Route::post('/video/summarize', [LessonSubtitleApiController::class, 'summarize']);
+        Route::post('/video/summarize', [LessonSubtitleApiController::class, 'summarize'])
+            ->middleware('usage.limit:text_summarization');
     });
 
     // Quiz Routes (AI-Powered Quiz System)
@@ -205,6 +227,31 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Reports Routes
     require __DIR__ . '/reports-routes.php';
+
+    // Usage & Subscription Routes
+    Route::prefix('usage')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\UsageController::class, 'dashboard']);
+        Route::get('/summary', [App\Http\Controllers\UsageController::class, 'summary']);
+    });
+
+    // Checkout Routes (for payment processing)
+    Route::prefix('checkout')->group(function () {
+        Route::get('/gateways', [CheckoutApiController::class, 'gateways']);
+        Route::post('/create-session', [CheckoutApiController::class, 'createSession']);
+        Route::post('/process', [CheckoutApiController::class, 'processPayment']);
+        Route::get('/verify/{sessionId}', [CheckoutApiController::class, 'verifySession']);
+    });
+
+    // User Subscription Routes
+    Route::prefix('user/subscription')->group(function () {
+        Route::get('/', [SubscriptionApiController::class, 'current']);
+        Route::get('/history', [SubscriptionApiController::class, 'history']);
+        Route::post('/cancel', [SubscriptionApiController::class, 'cancel']);
+        Route::post('/resume', [SubscriptionApiController::class, 'resume']);
+    });
+
+    // User Payments Route
+    Route::get('user/payments', [SubscriptionApiController::class, 'payments']);
 
     // Log Viewer Routes
     Route::prefix('logs')->group(function () {

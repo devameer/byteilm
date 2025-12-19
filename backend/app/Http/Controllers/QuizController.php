@@ -158,6 +158,10 @@ class QuizController extends Controller
                 'is_active' => $request->is_active ?? true
             ]);
 
+            // Track usage
+            $usage = $user->usage ?: $user->getOrCreateUsage();
+            $usage->incrementUsage('quiz_generation');
+
             return response()->json([
                 'success' => true,
                 'message' => 'تم إنشاء الاختبار بنجاح باستخدام الذكاء الاصطناعي',

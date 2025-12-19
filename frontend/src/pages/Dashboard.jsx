@@ -8,6 +8,7 @@ import StatsCard from "../components/dashboard/StatsCard";
 import QuickAction from "../components/dashboard/QuickAction";
 import UsageItem from "../components/dashboard/UsageItem";
 import DashboardSkeleton from "../components/skeletons/DashboardSkeleton";
+import SubscriptionStatus from "../components/subscription/SubscriptionStatus";
 
 function Dashboard() {
     const { user } = useAuth();
@@ -499,6 +500,9 @@ function Dashboard() {
                             />
                         </div>
                     </div>
+
+                    {/* Subscription Status */}
+                    <SubscriptionStatus />
 
                     {upcomingLessons.length > 0 && (
                         <div className={`rounded-2xl shadow-sm border p-6 transition-colors duration-300 ${

@@ -121,6 +121,11 @@ class LessonVideoApiController extends Controller
             // Create video record
             $video = $lesson->video()->create($videoData);
 
+            // Track usage
+            $user = $request->user();
+            $usage = $user->usage ?: $user->getOrCreateUsage();
+            $usage->incrementUsage('video_upload');
+
             DB::commit();
 
             return response()->json([

@@ -1075,7 +1075,7 @@ textarea:focus-visible {
 }
 
 /* Dark mode text colors */
-.dark h1,
+/* .dark h1,
 .dark h2,
 .dark h3,
 .dark h4,
@@ -1091,7 +1091,7 @@ textarea:focus-visible {
 .dark small,
 .dark .text-sm {
     color: #9ca3af;
-}
+} */
 
 /* Dark mode hover effects */
 .dark .hover-lift:hover {

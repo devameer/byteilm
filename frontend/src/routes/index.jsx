@@ -41,6 +41,12 @@ const QuizResultsPage = lazy(() => import("../pages/QuizResults"));
 const QuizAttemptsPage = lazy(() => import("../pages/QuizAttempts"));
 const LogViewerPage = lazy(() => import("../pages/LogViewer"));
 
+// Payment Pages
+const PricingPage = lazy(() => import("../pages/Pricing"));
+const CheckoutPage = lazy(() => import("../pages/Checkout"));
+const PaymentSuccessPage = lazy(() => import("../pages/PaymentSuccess"));
+const PaymentCancelPage = lazy(() => import("../pages/PaymentCancel"));
+
 export const publicRoutes = [
   { path: "/", element: <LandingPage /> },
   { path: "/features", element: <FeaturesPage /> },
@@ -49,6 +55,7 @@ export const publicRoutes = [
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
   { path: "/teams/join/:token", element: <JoinTeamPage /> },
+  { path: "/pricing", element: <PricingPage /> },
 ];
 
 export const privateRoutes = [
@@ -81,4 +88,8 @@ export const privateRoutes = [
   { path: "/quizzes/:quizId", element: <QuizTakePage /> },
   { path: "/quiz-results/:attemptId", element: <QuizResultsPage /> },
   { path: "/logs", element: <LogViewerPage /> },
+  // Payment Pages
+  { path: "/checkout/:planId", element: <CheckoutPage /> },
+  { path: "/payment/success", element: <PaymentSuccessPage /> },
+  { path: "/payment/cancel", element: <PaymentCancelPage /> },
 ];

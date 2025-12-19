@@ -662,6 +662,11 @@ class LessonSubtitleApiController extends Controller
         try {
             $translatedText = $this->geminiService->translateToArabicWithTimestamps($request->text);
 
+            // Track usage
+            $user = Auth::user();
+            $usage = $user->usage ?: $user->getOrCreateUsage();
+            $usage->incrementUsage('text_translation');
+
             return response()->json([
                 'success' => true,
                 'message' => 'تمت الترجمة بنجاح',
@@ -845,6 +850,11 @@ class LessonSubtitleApiController extends Controller
                 $request->target_language,
                 $request->target_language_name
             );
+
+            // Track usage
+            $user = Auth::user();
+            $usage = $user->usage ?: $user->getOrCreateUsage();
+            $usage->incrementUsage('text_translation');
 
             return response()->json([
                 'success' => true,
